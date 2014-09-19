@@ -14,7 +14,7 @@ A Python interpreter written in TypeScript
 
 ## TypeScript
 * [importing node modules with TypeScript](https://stackoverflow.com/questions/18378503/importing-node-modules-with-typescript)
-
+* [Typescript tutorial] http://www.typescriptlang.org/Tutorial 
 ### Using external modules
 Node:
 * download [node.d.ts](https://github.com/borisyankov/DefinitelyTyped/blob/master/node/node.d.ts)
