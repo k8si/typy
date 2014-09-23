@@ -21,3 +21,6 @@ Node:
 * add to the top of your file:
 	/// <reference path="node.d.ts" />
 * run `tsc foo.ts --module "commonjs"`
+
+## Misc
+* [BrowserFS](https://github.com/jvilk/BrowserFS)
