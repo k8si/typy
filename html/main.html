@@ -2,7 +2,18 @@
 <html>
 <head><title>foo</title></head>
 <body>
-	<script type="text/javascript" src="browserfs/browserfs.min.js"></script>
+	<script type="text/javascript" src="../src/browserfs/browserfs.js"></script>
+    <script type="text/javascript" src="../src/io.js"></script>
+    <script type="text/javascript">
+        //installs globals onto window
+        BrowserFS.install(window);
+        var lsfs = new BrowserFS.FileSystem.LocalStorage();
+        BrowserFS.initialize(lsfs);
+        var fs = require('fs');
+        var pyc = new PYCFile("../src/test.txt");
+        console.log(pyc.getInfo());
+
+    </script>
 	<script src="../src/io.js"></script>
 </body>
 </html>
