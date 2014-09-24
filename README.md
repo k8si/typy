@@ -4,6 +4,7 @@ CMPSCI 630 Project 1
 A Python interpreter written in TypeScript
 
 # Useful Links
+
 ## Python Interpreter
 * [bytecodehacks](http://sourceforge.net/projects/bytecodehacks/) -- we should basically port this into TypeScript (everything is of course out of date, this was written for ~Python 1.5.2)
 * [manually compile python scripts to bytecode](https://docs.python.org/2/library/compileall.html)
@@ -16,12 +17,11 @@ A Python interpreter written in TypeScript
 ## TypeScript
 * [importing node modules with TypeScript](https://stackoverflow.com/questions/18378503/importing-node-modules-with-typescript)
 * [Typescript tutorial] http://www.typescriptlang.org/Tutorial 
-### Using external modules
-Node:
-* download [node.d.ts](https://github.com/borisyankov/DefinitelyTyped/blob/master/node/node.d.ts)
-* add to the top of your file:
-	/// <reference path="node.d.ts" />
-* run `tsc foo.ts --module "commonjs"`
+
+### TypeScript modules
+* [DefinitelyTyped](https://github.com/georgiosd/DefinitelyTyped)
+* [Underscore](http://underscorejs.org/) - functional programming
+* [TypeScript Collections](https://github.com/basarat/typescript-collections) - I can't figure how how to get this to work
 
 ## Misc
 * [BrowserFS](https://github.com/jvilk/BrowserFS)
