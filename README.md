@@ -5,6 +5,7 @@ A Python interpreter written in TypeScript
 
 # Useful Links
 ## Python Interpreter
+* [bytecodehacks](http://sourceforge.net/projects/bytecodehacks/) -- we should basically port this into TypeScript (everything is of course out of date, this was written for ~Python 1.5.2)
 * [manually compile python scripts to bytecode](https://docs.python.org/2/library/compileall.html)
 * [python "dis" module](https://docs.python.org/2/library/dis.html)
 * [brief overview of the python interpreter](https://akaptur.github.io/blog/2013/11/15/introduction-to-the-python-interpreter/)
