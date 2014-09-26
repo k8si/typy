@@ -63,7 +63,7 @@ dis output (i.e. dis.dis(co.co_code)):
  6 LOAD_CONST          1 (1)
  9 RETURN_VALUE
 
-our (io.ts) output:
+our (parse.ts) output:
  100 = 144 --> LOAD_CONST
  0 = 0 --> STOP_CODE
  0 = 0 --> STOP_CODE
