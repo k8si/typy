@@ -1,9 +1,7 @@
 /*
 Basically stolen from https://github.com/basarat/typescript-collections (because I haven't been able to get the module to work with Node)
-
 TODO if we're actually gonna use any of these, need to catch errors, test, etc.
- */
-
+*/
 //interface IDict {
 //    add(key: string, value: any): void;
 //    remove(key: string): void;
@@ -13,49 +11,52 @@ TODO if we're actually gonna use any of these, need to catch errors, test, etc.
 //    get(key: string): any;
 //    size(): number;
 //}
-
-export class Dict<V> {
-    _keys: Array<string>;
-    _values: Array<V>;
-
-    constructor() {
-        this._keys = new Array<string>();
-        this._values = new Array<V>();
+var Dict = (function () {
+    function Dict() {
+        this._keys = new Array();
+        this._values = new Array();
     }
-
     // FIXME should throw exception if we try to add a key that's already in the dict
-    add(key: string, value: V): void {
+    Dict.prototype.add = function (key, value) {
         this._keys.push(key);
         this._values.push(value);
-    }
+    };
 
-    remove(key: string): void {
+    Dict.prototype.remove = function (key) {
         var idx = this._keys.indexOf(key, 0);
         this._keys.splice(idx, 1);
         this._values.splice(idx, 1);
-    }
+    };
 
     /* FIXME better implementation for this? Why doesn't "in" work? */
-    contains(key: string): boolean {
+    Dict.prototype.contains = function (key) {
         var result = false;
-        if (this._keys.indexOf(key) >= 0) result = true;
+        if (this._keys.indexOf(key) >= 0)
+            result = true;
         return result;
-    }
+    };
 
-    keys(): Array<string> { return this._keys; }
-    values(): Array<V> { return this._values; }
+    Dict.prototype.keys = function () {
+        return this._keys;
+    };
+    Dict.prototype.values = function () {
+        return this._values;
+    };
 
-    get(key: string): V {
+    Dict.prototype.get = function (key) {
         if (this.contains(key)) {
             var idx = this._keys.indexOf(key, 0);
             return this._values[idx];
         }
         return undefined;
-    }
+    };
 
-    size(): number { return this._keys.length; }
-}
-
+    Dict.prototype.size = function () {
+        return this._keys.length;
+    };
+    return Dict;
+})();
+exports.Dict = Dict;
 
 //interface IMap {
 //    add(key: string, value: any): void;
@@ -66,48 +67,55 @@ export class Dict<V> {
 //    get(key: string): any;
 //    size(): number;
 //}
-
-export class Map<K, V> {
-    _keys: Array<K>;
-    _values: Array<V>;
-
-    constructor() {
-        this._keys = new Array<K>();
-        this._values = new Array<V>();
+var Map = (function () {
+    function Map() {
+        this._keys = new Array();
+        this._values = new Array();
     }
-
-    add(key: K, value: V): void {
-        if (this.contains(key)) { console.log("invalid: duplicate key"); return; }
+    Map.prototype.add = function (key, value) {
+        if (this.contains(key)) {
+            console.log("invalid: duplicate key");
+            return;
+        }
         this._keys.push(key);
         this._values.push(value);
-    }
+    };
 
     // TODO I have no idea if this actually works
-    remove(key: K): void {
+    Map.prototype.remove = function (key) {
         var idx = this._keys.indexOf(key, 0);
         this._keys.splice(idx, 1);
         this._values.splice(idx, 1);
-    }
+    };
 
-    contains(key: K): boolean {
+    Map.prototype.contains = function (key) {
         var result = false;
-        if (this._keys.indexOf(key) >= 0) result = true;
+        if (this._keys.indexOf(key) >= 0)
+            result = true;
         return result;
-    }
+    };
 
-    keys(): Array<K> { return this._keys; }
-    values(): Array<V> { return this._values; }
+    Map.prototype.keys = function () {
+        return this._keys;
+    };
+    Map.prototype.values = function () {
+        return this._values;
+    };
 
-    get(key: K): V {
+    Map.prototype.get = function (key) {
         if (this.contains(key)) {
             var idx = this._keys.indexOf(key, 0);
             return this._values[idx];
         }
         return undefined;
-    }
+    };
 
-    size(): number { return this._keys.length; }
-}
+    Map.prototype.size = function () {
+        return this._keys.length;
+    };
+    return Map;
+})();
+exports.Map = Map;
 
 //export class Stack<T> {
 //    private list: Array<T>;
@@ -135,33 +143,33 @@ export class Map<K, V> {
 //        return s;
 //    }
 //}
-
 /* some helper functions stolen from doppio and StackOverflow */
-export function bytestr_to_array(bytecode_string: string): number[] {
-    var rv : number[] = [];
+function bytestr_to_array(bytecode_string) {
+    var rv = [];
     for (var i = 0; i < bytecode_string.length; i++) {
         rv.push(bytecode_string.charCodeAt(i) & 0xFF);
         rv.push(bytecode_string.charCodeAt(i));
     }
     return rv;
 }
+exports.bytestr_to_array = bytestr_to_array;
 
-export function byte2str(byte: number): string {
+function byte2str(byte) {
     var s = byte <= 0x7f ? byte === 0x25 ? "%25" : String.fromCharCode(byte) : "%" + byte.toString(16).toUpperCase();
     return decodeURIComponent(s);
 }
+exports.byte2str = byte2str;
 
-export function byteArrayToUTF8(byteArray): string {
+function byteArrayToUTF8(byteArray) {
     var str = '';
     for (var i = 0; i < byteArray.length; i++)
-        str +=  byteArray[i] <= 0x7F?
-                byteArray[i] === 0x25 ? "%25" : // %
-            String.fromCharCode(byteArray[i]) :
-            "%" + byteArray[i].toString(16).toUpperCase();
+        str += byteArray[i] <= 0x7F ? byteArray[i] === 0x25 ? "%25" : String.fromCharCode(byteArray[i]) : "%" + byteArray[i].toString(16).toUpperCase();
     return decodeURIComponent(str);
-};
+}
+exports.byteArrayToUTF8 = byteArrayToUTF8;
+;
 
-export function utf8toByteArray(str): number[] {
+function utf8toByteArray(str) {
     var byteArray = [];
     for (var i = 0; i < str.length; i++)
         if (str.charCodeAt(i) <= 0x7F)
@@ -172,30 +180,34 @@ export function utf8toByteArray(str): number[] {
                 byteArray.push(parseInt(h[j], 16));
         }
     return byteArray;
-};
+}
+exports.utf8toByteArray = utf8toByteArray;
+;
 
-export function bytes2str(bytes: number[], null_terminate?: boolean): string {
-    var y : number;
-    var z : number;
+function bytes2str(bytes, null_terminate) {
+    var y;
+    var z;
     var idx = 0;
     var rv = '';
     while (idx < bytes.length) {
         var x = bytes[idx++] & 0xff;
-//            if (null_terminate && x == 0) {
-//                break;
-//            }
+
+        //            if (null_terminate && x == 0) {
+        //                break;
+        //            }
         rv += String.fromCharCode(x <= 0x7f ? x : x <= 0xdf ? (y = bytes[idx++], ((x & 0x1f) << 6) + (y & 0x3f)) : (y = bytes[idx++], z = bytes[idx++], ((x & 0xf) << 12) + ((y & 0x3f) << 6) + (z & 0x3f)));
     }
     return rv;
 }
+exports.bytes2str = bytes2str;
 
-export function byteArray2Buffer(bytes: number[], offset: number = 0, len: number = bytes.length): NodeBuffer {
-    var buff = new Buffer(len), i: number;
+function byteArray2Buffer(bytes, offset, len) {
+    if (typeof offset === "undefined") { offset = 0; }
+    if (typeof len === "undefined") { len = bytes.length; }
+    var buff = new Buffer(len), i;
     for (i = 0; i < len; i++) {
         buff.writeInt32LE(bytes[offset + i], i);
     }
     return buff;
 }
-
-
-
+exports.byteArray2Buffer = byteArray2Buffer;

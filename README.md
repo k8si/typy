@@ -5,7 +5,13 @@ A Python interpreter written in TypeScript
 
 # Useful Links
 
+## General Interpreters
+* [How to Write A Lisp Interpreter In Python](http://norvig.com/lispy.html)
+* [paper on the Smalltalk bytecode interpreter](http://smalltalk.gnu.org/files/vmimpl.pdf)
+
 ## Python Interpreter
+* [marshall format](http://daeken.com/2010-02-20_Python_Marshal_Format.html)
+* [The Python Interpreter Is And Not At All Terrifying: Opcodes](http://www.slideshare.net/alexgolec/python-opcodes)
 * [bytecodehacks](http://sourceforge.net/projects/bytecodehacks/) -- we should basically port this into TypeScript (everything is of course out of date, this was written for ~Python 1.5.2)
 * [manually compile python scripts to bytecode](https://docs.python.org/2/library/compileall.html)
 * [python "dis" module](https://docs.python.org/2/library/dis.html)
@@ -22,6 +28,7 @@ A Python interpreter written in TypeScript
 * [DefinitelyTyped](https://github.com/georgiosd/DefinitelyTyped)
 * [Underscore](http://underscorejs.org/) - functional programming
 * [TypeScript Collections](https://github.com/basarat/typescript-collections) - I can't figure how how to get this to work
+
 
 ## Misc
 * [BrowserFS](https://github.com/jvilk/BrowserFS)

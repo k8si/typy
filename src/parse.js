@@ -1,39 +1,38 @@
 /// <reference path="../lib/node/node.d.ts" />
+var fs = require('fs');
 
-import fs = require('fs');
-import path = require('path');
-import opcodes = require('./opcodes');
-import utils = require('./utils');
-import types = require('./types');
+var opcodes = require('./opcodes');
+var utils = require('./utils');
+var types = require('./types');
 
-class PYCFile {
-    magic: any; //the magic number
-    timestamp: any; //the timestamp of when the file was compiled
-    contents: any; //the marshaled code object
-    opcodes = opcodes.opcodes;
-    types = types.typeDict;
-    typechars = types.typechars;
-
-    constructor(public filename: string) {
+var PYCFile = (function () {
+    function PYCFile(filename) {
+        this.filename = filename;
+        this.opcodes = opcodes.opcodes;
+        this.types = types.typeDict;
+        this.typechars = types.typechars;
         console.log("reading " + filename);
+
         //synchronously read in the file associated with this object
         var data = fs.readFileSync(filename, null);
-        console.log("read "+data.length+" bytes");
+        console.log("read " + data.length + " bytes");
         if (data.length > 0) {
-//            this.magic = data.slice(0, 4);
-//            this.timestamp = data.slice(4, 8);
-//            this.contents = data.slice(8, data.length);
+            //            this.magic = data.slice(0, 4);
+            //            this.timestamp = data.slice(4, 8);
+            //            this.contents = data.slice(8, data.length);
             this.contents = data;
         }
         console.log("done reading");
     }
-    getInfo(): string { return this.filename + " " + this.contents.length; }
-    printHeader(): void {
+    PYCFile.prototype.getInfo = function () {
+        return this.filename + " " + this.contents.length;
+    };
+    PYCFile.prototype.printHeader = function () {
         console.log("magic: " + utils.bytestr_to_array(this.magic));
         console.log("timestamp: " + utils.bytestr_to_array(this.timestamp));
-    }
+    };
 
-    parseContents(): void {
+    PYCFile.prototype.parseContents = function () {
         console.log("contents len: " + this.contents.length);
         var i = 0;
         while (i < this.contents.length) {
@@ -47,39 +46,32 @@ class PYCFile {
             }
             i++;
         }
-    }
-
-}
+    };
+    return PYCFile;
+})();
 
 /*
 python code:
 co = compile("a = 1", "f", "single")
 with open("foo.pyc", "wb") as f:
-    f.write(co.co_code)
-
+f.write(co.co_code)
 dis output (i.e. dis.dis(co.co_code)):
- 0 LOAD_CONST          0 (0)
- 3 STORE_NAME          0 (0)
- 6 LOAD_CONST          1 (1)
- 9 RETURN_VALUE
-
+0 LOAD_CONST          0 (0)
+3 STORE_NAME          0 (0)
+6 LOAD_CONST          1 (1)
+9 RETURN_VALUE
 our (io.ts) output:
- 100 = 144 --> LOAD_CONST
- 0 = 0 --> STOP_CODE
- 0 = 0 --> STOP_CODE
- 90 = 132 --> STORE_NAME
- 0 = 0 --> STOP_CODE
- 0 = 0 --> STOP_CODE
- 100 = 144 --> LOAD_CONST
- 1 = 1 --> POP_TOP
- 0 = 0 --> STOP_CODE
- 83 = 123 --> RETURN_VALUE
- */
-
-
-
+100 = 144 --> LOAD_CONST
+0 = 0 --> STOP_CODE
+0 = 0 --> STOP_CODE
+90 = 132 --> STORE_NAME
+0 = 0 --> STOP_CODE
+0 = 0 --> STOP_CODE
+100 = 144 --> LOAD_CONST
+1 = 1 --> POP_TOP
+0 = 0 --> STOP_CODE
+83 = 123 --> RETURN_VALUE
+*/
 var f = fs.realpathSync("../630-proj1/pyc/foo.pyc");
 var pyc = new PYCFile(f);
 pyc.parseContents();
-
-

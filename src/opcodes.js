@@ -1,25 +1,22 @@
 /**
- * Created by kate on 9/25/14.
- */
-
-import utils = require('./utils');
+* Created by kate on 9/25/14.
+*/
+var utils = require('./utils');
 
 /* based on doppio */
-export class Opcode {
-    public name: string;
-    public code: string;
-    public byteCount: number;
-    public args: number[];
-
-    constructor(name: string, code: number, byteCount: number) {
+var Opcode = (function () {
+    function Opcode(name, code, byteCount) {
         this.name = name;
         this.byteCount = byteCount;
     }
+    Opcode.prototype.toString = function () {
+        return this.name;
+    };
+    return Opcode;
+})();
+exports.Opcode = Opcode;
 
-    toString(): string { return this.name; }
-}
-
-var opc = new utils.Map<number, Opcode>();
+var opc = new utils.Map();
 
 /* mappings taken from https://github.com/daeken/RMarshal/blob/master/lib/rmarshal/opcodes.rb */
 /* TODO finish this off, decide on a final design for the object, map to some kind of "execute" function */
@@ -55,12 +52,4 @@ opc.add(116, new Opcode("LOAD_GLOBAL", 0x74, -1));
 opc.add(117, new Opcode("???", 0x75, -1));
 opc.add(121, new Opcode("SETUP_EXCEPT", 0x79, -1));
 
-
-export var opcodes = opc;
-
-
-
-
-
-
-
+exports.opcodes = opc;
