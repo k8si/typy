@@ -39,8 +39,8 @@ var PYCFile = (function () {
             var byte = this.contents[i];
             if (this.opcodes.contains(byte)) {
                 console.log(byte + " = " + byte.toString(16) + " --> " + this.opcodes.get(byte));
-            } else if (this.typechars.indexOf(String.fromCharCode(byte))) {
-                console.log(byte + " " + this.typechars[this.typechars.indexOf(String.fromCharCode(byte))]);
+                //            } else if (this.typechars.indexOf(String.fromCharCode(byte))) {
+                //                console.log(byte + " " + this.typechars[this.typechars.indexOf(String.fromCharCode(byte))]);
             } else {
                 console.log(byte + " = " + byte.toString(16));
             }
@@ -60,7 +60,7 @@ dis output (i.e. dis.dis(co.co_code)):
 3 STORE_NAME          0 (0)
 6 LOAD_CONST          1 (1)
 9 RETURN_VALUE
-our (io.ts) output:
+our (parse.ts) output:
 100 = 144 --> LOAD_CONST
 0 = 0 --> STOP_CODE
 0 = 0 --> STOP_CODE

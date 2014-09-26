@@ -40,8 +40,8 @@ class PYCFile {
             var byte = this.contents[i];
             if (this.opcodes.contains(byte)) {
                 console.log(byte + " = " + byte.toString(16) + " --> " + this.opcodes.get(byte));
-            } else if (this.typechars.indexOf(String.fromCharCode(byte))) {
-                console.log(byte + " " + this.typechars[this.typechars.indexOf(String.fromCharCode(byte))]);
+//            } else if (this.typechars.indexOf(String.fromCharCode(byte))) {
+//                console.log(byte + " " + this.typechars[this.typechars.indexOf(String.fromCharCode(byte))]);
             } else {
                 console.log(byte + " = " + byte.toString(16));
             }
@@ -64,16 +64,16 @@ dis output (i.e. dis.dis(co.co_code)):
  9 RETURN_VALUE
 
 our (parse.ts) output:
- 100 = 144 --> LOAD_CONST
+ 100 = 64 --> LOAD_CONST
  0 = 0 --> STOP_CODE
  0 = 0 --> STOP_CODE
- 90 = 132 --> STORE_NAME
+ 90 = 5a --> STORE_NAME
  0 = 0 --> STOP_CODE
  0 = 0 --> STOP_CODE
- 100 = 144 --> LOAD_CONST
+ 100 = 64 --> LOAD_CONST
  1 = 1 --> POP_TOP
  0 = 0 --> STOP_CODE
- 83 = 123 --> RETURN_VALUE
+ 83 = 53 --> RETURN_VALUE
  */
 
 
