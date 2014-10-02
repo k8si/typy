@@ -117,32 +117,34 @@ var Map = (function () {
 })();
 exports.Map = Map;
 
-//export class Stack<T> {
-//    private list: Array<T>;
-//    private idx: number;
-//    constructor(){
-//        this.list = new Array<T>();
-//        this.idx = 0;
-//    }
-//    push(elem: T): void {
-//        this.list[this.idx] = elem;
-//        this.idx += 1;
-//    }
-//    pop(): T {
-//        if (this.idx <= 0) return undefined;
-//        var result = this.list[this.idx];
-//        this.list[this.idx] = undefined;
-//        this.idx = this.idx - 1;
-//        return result;
-//    }
-//    toString(): string {
-//        var s = "";
-//        for (var i = 0; i < this.idx; i++) {
-//            s = s + this.list[i].toString() + " ";
-//        }
-//        return s;
-//    }
-//}
+var Stack = (function () {
+    function Stack() {
+        this.list = new Array();
+        this.idx = 0;
+    }
+    Stack.prototype.push = function (elem) {
+        this.list[this.idx] = elem;
+        this.idx += 1;
+    };
+    Stack.prototype.pop = function () {
+        if (this.idx <= 0)
+            return undefined;
+        var result = this.list[this.idx];
+        this.list[this.idx] = undefined;
+        this.idx = this.idx - 1;
+        return result;
+    };
+    Stack.prototype.toString = function () {
+        var s = "";
+        for (var i = 0; i < this.idx; i++) {
+            s = s + this.list[i].toString() + " ";
+        }
+        return s;
+    };
+    return Stack;
+})();
+exports.Stack = Stack;
+
 /* some helper functions stolen from doppio and StackOverflow */
 function bytestr_to_array(bytecode_string) {
     var rv = [];

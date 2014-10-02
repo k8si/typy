@@ -1,8 +1,6 @@
 CMPSCI 630 Project 1
 =========
 
-A Python interpreter written in TypeScript
-
 # Useful Links
 
 ## General Interpreters
@@ -10,6 +8,7 @@ A Python interpreter written in TypeScript
 * [paper on the Smalltalk bytecode interpreter](http://smalltalk.gnu.org/files/vmimpl.pdf)
 
 ## Python Interpreter
+* [UnPyc](http://sourceforge.net/projects/unpyc/) -- this is the most useful thing I've found so far
 * [marshall format](http://daeken.com/2010-02-20_Python_Marshal_Format.html)
 * [The Python Interpreter Is And Not At All Terrifying: Opcodes](http://www.slideshare.net/alexgolec/python-opcodes)
 * [bytecodehacks](http://sourceforge.net/projects/bytecodehacks/) -- we should basically port this into TypeScript (everything is of course out of date, this was written for ~Python 1.5.2)

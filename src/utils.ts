@@ -109,32 +109,32 @@ export class Map<K, V> {
     size(): number { return this._keys.length; }
 }
 
-//export class Stack<T> {
-//    private list: Array<T>;
-//    private idx: number;
-//    constructor(){
-//        this.list = new Array<T>();
-//        this.idx = 0;
-//    }
-//    push(elem: T): void {
-//        this.list[this.idx] = elem;
-//        this.idx += 1;
-//    }
-//    pop(): T {
-//        if (this.idx <= 0) return undefined;
-//        var result = this.list[this.idx];
-//        this.list[this.idx] = undefined;
-//        this.idx = this.idx - 1;
-//        return result;
-//    }
-//    toString(): string {
-//        var s = "";
-//        for (var i = 0; i < this.idx; i++) {
-//            s = s + this.list[i].toString() + " ";
-//        }
-//        return s;
-//    }
-//}
+export class Stack<T> {
+    private list: Array<T>;
+    private idx: number;
+    constructor(){
+        this.list = new Array<T>();
+        this.idx = 0;
+    }
+    push(elem: T): void {
+        this.list[this.idx] = elem;
+        this.idx += 1;
+    }
+    pop(): T {
+        if (this.idx <= 0) return undefined;
+        var result = this.list[this.idx];
+        this.list[this.idx] = undefined;
+        this.idx = this.idx - 1;
+        return result;
+    }
+    toString(): string {
+        var s = "";
+        for (var i = 0; i < this.idx; i++) {
+            s = s + this.list[i].toString() + " ";
+        }
+        return s;
+    }
+}
 
 /* some helper functions stolen from doppio and StackOverflow */
 export function bytestr_to_array(bytecode_string: string): number[] {
