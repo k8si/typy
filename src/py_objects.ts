@@ -2,6 +2,16 @@
  * Created by kate on 9/28/14.
  */
 
+/*
+TODO this may all be unnecessarily complicated
+
+TODO PyObjects for StopIter, Ellipsis, PyFloat, PyList, PySet and some others
+
+TODO change "any"-type fields to something other than "any" (anything that's "any" is "any"
+because I didn't feel like figuring it out at the time)
+
+
+ */
 
 
 export class APyObject { } //sigh
