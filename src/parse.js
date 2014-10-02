@@ -30,14 +30,6 @@ var pc = 0;
 var PARSE_ERR = "parser error";
 var tm = opcodes.type_map;
 
-function print_co_code(buf) {
-    for (var i = 0; i < buf.length; i += 3) {
-        console.log(buf[i].toString(16) + " -- " + opcodes.Opcode[buf[i]]);
-        console.log(buf[i + 1]);
-        console.log(buf[i + 2]);
-    }
-}
-
 function read_byte(data) {
     if (pc + 1 > data.length)
         throw new Error(PARSE_ERR);
@@ -95,27 +87,24 @@ function read_tuple(data) {
 }
 
 function read_string(data) {
-    // string representation of the bytecode
-    var coStart = data.readUInt8(pc++);
-    console.log("at offset: " + pc + " code (first byte): " + coStart + " / " + String.fromCharCode(coStart));
-    console.assert(String.fromCharCode(coStart) == 's', "Invalid first byte of co_code: " + coStart + "(" + String.fromCharCode(coStart) + ").");
-
-    //    var coLength = data.readInt32LE(pc); pc += 4;
     var coLength = read_long(data);
-    console.log("co_code length: " + coLength);
     var co_code = new Buffer(coLength);
     data.copy(co_code, 0, pc, pc + coLength);
     pc += coLength;
-    print_co_code(co_code);
     return co_code;
 }
 
 //TODO this could probably be more succint
 function read_object(data) {
+    //    console.log("read_object @ offset: " + pc);
     if (pc + 1 > data.length)
         throw new Error("parser error");
     var byte = data.readUInt8(pc);
+    var offset = pc;
+    pc++;
     var typechar = String.fromCharCode(byte);
+
+    //    console.log("typchar = " + typechar);
     var val;
     switch (typechar) {
         case tm.NULL:
@@ -123,10 +112,12 @@ function read_object(data) {
             return undefined;
 
         case tm.NONE:
+            pc++;
             console.log("found none");
             return new pyo.PyNone(pc++);
 
         case tm.STOPITER:
+            console.log("found stopiter");
             pc++;
             return undefined;
 
@@ -143,8 +134,9 @@ function read_object(data) {
             return new pyo.PyTrue(pc++);
 
         case tm.INT:
-            console.log("found int @ " + pc);
-            return new pyo.PyInt(pc, read_long(data));
+            console.log("found int @ " + offset);
+            val = read_long(data);
+            return new pyo.PyInt(offset, val);
 
         case tm.INT64:
             console.log("found int64");
@@ -159,12 +151,15 @@ function read_object(data) {
             return undefined;
 
         case tm.BINARY_FLOAT:
+            console.log("found binary_float");
             return undefined;
 
         case tm.COMPLEX:
+            console.log("found complex");
             return undefined;
 
         case tm.BINARY_COMPLEX:
+            console.log("found binary_complex");
             return undefined;
 
         case tm.INTERNED:
@@ -172,10 +167,9 @@ function read_object(data) {
             return undefined;
 
         case tm.STRING:
-            var tmp = pc;
-            console.log("found string @ " + pc);
+            console.log("found string @ " + offset);
             val = read_string(data);
-            return new pyo.PyString(tmp, val);
+            return new pyo.PyString(offset, val);
 
         case tm.STRINGREF:
             console.log("found stringref");
@@ -186,7 +180,7 @@ function read_object(data) {
 
         case tm.TUPLE:
             console.log("found tuple");
-            return new pyo.PyTuple(pc, read_tuple(data));
+            return new pyo.PyTuple(offset, read_tuple(data));
 
         case tm.LIST:
             console.log("found list");
@@ -200,8 +194,25 @@ function read_object(data) {
             return undefined;
 
         case tm.CODE:
-            console.log("found code @ " + pc);
-            var obj = new pyo.PyCodeObject(pc, read_long(data), read_long(data), read_long(data), read_long(data), read_object(data), read_object(data), read_object(data), read_object(data), read_object(data), read_object(data), read_object(data), read_object(data), read_long(data), read_object(data));
+            console.log("found code @ " + offset);
+
+            //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
+            var argcount = read_long(data);
+            var nlocals = read_long(data);
+            var stacksize = read_long(data);
+            var flags = read_long(data);
+            var code = read_object(data);
+            var consts = read_object(data);
+            var names = read_object(data);
+            var varnames = read_object(data);
+            var freevars = read_object(data);
+            var cellvars = read_object(data);
+            var filename = read_object(data);
+            var name = read_object(data);
+            var firstlineno = read_long(data);
+            var lnotab = read_long(data);
+
+            var obj = new pyo.PyCodeObject(offset, argcount, nlocals, stacksize, flags, code, consts, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             return obj;
 
         default:
@@ -229,6 +240,8 @@ var Parser = (function () {
             var stuff = read_object(data.slice(offset, data.length));
             console.log(typeof stuff);
             console.log(stuff.toString());
+
+            stuff.print_co_code();
         }
 
         fs.readFile(this.filename, function (err, data) {

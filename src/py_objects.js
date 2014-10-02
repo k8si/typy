@@ -7,6 +7,14 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
+/*
+TODO this may all be unnecessarily complicated
+TODO PyObjects for StopIter, Ellipsis, PyFloat, PyList, PySet and some others
+TODO change "any"-type fields to something other than "any" (anything that's "any" is "any"
+because I didn't feel like figuring it out at the time)
+*/
+var opcodes = require("./opcodes");
+
 var APyObject = (function () {
     function APyObject() {
     }
@@ -128,7 +136,23 @@ var PyCodeObject = (function (_super) {
         this.lnotab = lnotab;
     }
     PyCodeObject.prototype.toString = function () {
-        return "a PyCodeObject";
+        var info = this.argcount + " " + this.nlocals + " " + this.stacksize + " " + this.flags;
+
+        return "PyCodeObject: " + info;
+    };
+
+    PyCodeObject.prototype.print_co_code = function () {
+        var buf = this.code.value;
+        if (buf != undefined) {
+            for (var i = 0; i < buf.length; i += 3) {
+                console.log(buf[i].toString(16) + " -- " + opcodes.Opcode[buf[i]]);
+                console.log(buf[i + 1]);
+                console.log(buf[i + 2]);
+            }
+        } else {
+            console.log("PyCodeObject's co_code is undefined.");
+            throw new Error("this PyCodeObject's co_code is undefined");
+        }
     };
     return PyCodeObject;
 })(APyComplex);

@@ -9,10 +9,10 @@ TODO PyObjects for StopIter, Ellipsis, PyFloat, PyList, PySet and some others
 
 TODO change "any"-type fields to something other than "any" (anything that's "any" is "any"
 because I didn't feel like figuring it out at the time)
-
-
  */
 
+
+import opcodes = require("./opcodes");
 
 export class APyObject { } //sigh
 
@@ -57,6 +57,7 @@ export class PyLong extends APyComplex {
 export class PyString extends APyComplex {
     value:Buffer;
     constructor(offset:number, value:Buffer){ super(offset, "string"); this.value=value; }
+
 }
 
 export class PyTuple extends APyComplex {
@@ -66,21 +67,54 @@ export class PyTuple extends APyComplex {
 
 
 export class PyCodeObject extends APyComplex {
-    value:Buffer;
-    argcount:number; nlocals:number; stacksize:number; flags:number;
-    code:any; consts:any; names:any; varnames:any; freevars:any; cellvars:any; filename:any; name:any; firstlineno:number; lnotab:any;
+
+    argcount:number;
+    nlocals:number;
+    stacksize:number;
+    flags:number;
+    code:PyString;
+    consts:PyTuple;
+    names:PyTuple;
+    varnames:any;
+    freevars:any;
+    cellvars:any;
+    filename:any;
+    name:any;
+    firstlineno:number;
+    lnotab:any;
+
     constructor(offset:number,
         argcount:number, nlocals:number, stacksize:number, flags:number,
-        code:any, consts:any, names:any, varnames:any,
+        code:PyString, consts:PyTuple, names:PyTuple, varnames:any,
         freevars:any, cellvars:any, filename:any, name:any,
-        firstlineno:number, lnotab:any){
+        firstlineno:number, lnotab:any)
+    {
         super(offset, "code_object");
         this.argcount=argcount; this.nlocals=nlocals; this.stacksize=stacksize; this.flags=flags;
         this.code=code; this.consts=consts; this.names=names; this.varnames=varnames;
         this.freevars=freevars; this.cellvars=cellvars; this.filename=filename; this.name=name;
         this.firstlineno=firstlineno; this.lnotab=lnotab;
     }
-    toString(): string { return "a PyCodeObject"; }
+    toString(): string {
+        var info = this.argcount + " " + this.nlocals + " " + this.stacksize + " " + this.flags;
+
+        return "PyCodeObject: " + info;
+    }
+
+    public print_co_code(): void {
+        var buf = this.code.value;
+        if (buf != undefined) {
+            for (var i = 0; i < buf.length; i += 3) {
+                console.log(buf[i].toString(16) + " -- " + opcodes.Opcode[buf[i]]);
+                console.log(buf[i + 1]);
+                console.log(buf[i + 2]);
+            }
+        } else {
+            console.log("PyCodeObject's co_code is undefined.");
+            throw new Error("this PyCodeObject's co_code is undefined");
+        }
+
+    }
 }
 
 
