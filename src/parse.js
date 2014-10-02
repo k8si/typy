@@ -3,9 +3,6 @@ var fs = require('fs');
 
 var opcodes = require('./opcodes');
 
-var constants = require('./constants');
-
-//import types = require('./types');
 var pyo = require('./py_objects');
 
 /**
@@ -13,6 +10,7 @@ var pyo = require('./py_objects');
 * All I did was port Python (from UnPyc/Parse.py) -> Typescript
 */
 /*
+TODO verify the little/big endian-ness of things
 TODO we should take this stuff out of the global context (probably make them static methods of Parser?)
 the problem was, having "read_byte" as a method of Parser meant that I couldn't do the following:
 class Parser {
@@ -26,7 +24,9 @@ var s = this.fn(); ---> however, if I make fn() static, I can call Parser.fn() -
 }
 }
 */
+/** a global index into the pyc file we're reading (all of the read_ functions below incr this) **/
 var pc = 0;
+
 var PARSE_ERR = "parser error";
 var tm = opcodes.type_map;
 
@@ -110,6 +110,7 @@ function read_string(data) {
     return co_code;
 }
 
+//TODO this could probably be more succint
 function read_object(data) {
     if (pc + 1 > data.length)
         throw new Error("parser error");
@@ -216,7 +217,6 @@ var Parser = (function () {
     **/
     function Parser(filename, offset) {
         if (typeof offset === "undefined") { offset = 8; }
-        this.marshalTypes = constants.marshalTypes;
         this.filename = filename;
     }
     Parser.fn = function () {
@@ -235,8 +235,6 @@ var Parser = (function () {
             if (err)
                 throw err;
             callback(data, offset);
-            //            console.log(Parser.fn());
-            //            console.log(Parser.filename);
         });
     };
     return Parser;

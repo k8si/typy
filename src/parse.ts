@@ -4,8 +4,6 @@ import fs = require('fs');
 import path = require('path');
 import opcodes = require('./opcodes');
 import utils = require('./utils');
-import constants = require('./constants');
-//import types = require('./types');
 import pyo = require('./py_objects');
 
 /**
@@ -112,6 +110,7 @@ function read_string(data:Buffer): Buffer {
     return co_code;
 }
 
+//TODO this could probably be more succint
 function read_object(data:Buffer): any {
     if (pc + 1 > data.length) throw new Error("parser error");
     var byte = data.readUInt8(pc);
@@ -218,10 +217,8 @@ function read_object(data:Buffer): any {
 
 //TODO this is basically useless as-is...
 class Parser {
+
     private filename: string;
-    private co: any;
-    private data: Buffer;
-    private marshalTypes = constants.marshalTypes;
 
     /**
      @param fname filename of *.pyc file to parse
