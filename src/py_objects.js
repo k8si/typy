@@ -13,26 +13,45 @@ TODO PyObjects for StopIter, Ellipsis, PyFloat, PyList, PySet and some others
 TODO change "any"-type fields to something other than "any" (anything that's "any" is "any"
 because I didn't feel like figuring it out at the time)
 */
+/*
+TODO:
+PyUnicode
+PyInt64
+PyComplex (complex number)
+PyInterned
+PyStringRef
+PySet
+*/
 var opcodes = require("./opcodes");
 
-var APyObject = (function () {
-    function APyObject() {
+var PyObject = (function () {
+    function PyObject() {
     }
-    return APyObject;
+    return PyObject;
 })();
-exports.APyObject = APyObject;
+exports.PyObject = PyObject;
 
-// abstract wrapper class for Python primitives / "simple types"
-var APyPrimitive = (function (_super) {
-    __extends(APyPrimitive, _super);
-    function APyPrimitive(offset, type) {
+// abstract wrapper class "simple" Python types which contain no data
+var PyPrimitive = (function (_super) {
+    __extends(PyPrimitive, _super);
+    function PyPrimitive(offset, type) {
         _super.call(this);
         this.offset = offset;
         this.type = type;
     }
-    return APyPrimitive;
-})(APyObject);
-exports.APyPrimitive = APyPrimitive;
+    return PyPrimitive;
+})(PyObject);
+exports.PyPrimitive = PyPrimitive;
+
+var PyNull = (function (_super) {
+    __extends(PyNull, _super);
+    function PyNull(offset) {
+        _super.call(this, offset, "null");
+        this.value = undefined;
+    }
+    return PyNull;
+})(PyPrimitive);
+exports.PyNull = PyNull;
 
 var PyNone = (function (_super) {
     __extends(PyNone, _super);
@@ -41,7 +60,7 @@ var PyNone = (function (_super) {
         this.value = undefined;
     }
     return PyNone;
-})(APyPrimitive);
+})(PyPrimitive);
 exports.PyNone = PyNone;
 
 var PyTrue = (function (_super) {
@@ -51,7 +70,7 @@ var PyTrue = (function (_super) {
         this.value = true;
     }
     return PyTrue;
-})(APyPrimitive);
+})(PyPrimitive);
 exports.PyTrue = PyTrue;
 
 var PyFalse = (function (_super) {
@@ -61,20 +80,20 @@ var PyFalse = (function (_super) {
         this.value = false;
     }
     return PyFalse;
-})(APyPrimitive);
+})(PyPrimitive);
 exports.PyFalse = PyFalse;
 
-// abstract wrapper class for Python "objects" / "complex types"
-var APyComplex = (function (_super) {
-    __extends(APyComplex, _super);
-    function APyComplex(offset, type) {
+// abstract wrapper class for "complex" Python types which contain data
+var PyComplex = (function (_super) {
+    __extends(PyComplex, _super);
+    function PyComplex(offset, type) {
         _super.call(this);
         this.offset = offset;
         this.type = type;
     }
-    return APyComplex;
-})(APyObject);
-exports.APyComplex = APyComplex;
+    return PyComplex;
+})(PyObject);
+exports.PyComplex = PyComplex;
 
 var PyInt = (function (_super) {
     __extends(PyInt, _super);
@@ -83,7 +102,7 @@ var PyInt = (function (_super) {
         this.value = value;
     }
     return PyInt;
-})(APyComplex);
+})(PyComplex);
 exports.PyInt = PyInt;
 
 var PyLong = (function (_super) {
@@ -93,8 +112,18 @@ var PyLong = (function (_super) {
         this.value = value;
     }
     return PyLong;
-})(APyComplex);
+})(PyComplex);
 exports.PyLong = PyLong;
+
+var PyFloat = (function (_super) {
+    __extends(PyFloat, _super);
+    function PyFloat(offset, value) {
+        _super.call(this, offset, "float");
+        this.value = value;
+    }
+    return PyFloat;
+})(PyComplex);
+exports.PyFloat = PyFloat;
 
 var PyString = (function (_super) {
     __extends(PyString, _super);
@@ -103,7 +132,7 @@ var PyString = (function (_super) {
         this.value = value;
     }
     return PyString;
-})(APyComplex);
+})(PyComplex);
 exports.PyString = PyString;
 
 var PyTuple = (function (_super) {
@@ -113,8 +142,38 @@ var PyTuple = (function (_super) {
         this.value = value;
     }
     return PyTuple;
-})(APyComplex);
+})(PyComplex);
 exports.PyTuple = PyTuple;
+
+var PyList = (function (_super) {
+    __extends(PyList, _super);
+    function PyList(offset, value) {
+        _super.call(this, offset, "list");
+        this.value = value;
+    }
+    return PyList;
+})(PyComplex);
+exports.PyList = PyList;
+
+var PyDict = (function (_super) {
+    __extends(PyDict, _super);
+    function PyDict(offset, value) {
+        _super.call(this, offset, "dict");
+        this.value = value;
+    }
+    return PyDict;
+})(PyComplex);
+exports.PyDict = PyDict;
+
+var PyFrozenSet = (function (_super) {
+    __extends(PyFrozenSet, _super);
+    function PyFrozenSet(offset, value) {
+        _super.call(this, offset, "set");
+        this.value = value;
+    }
+    return PyFrozenSet;
+})(PyComplex);
+exports.PyFrozenSet = PyFrozenSet;
 
 var PyCodeObject = (function (_super) {
     __extends(PyCodeObject, _super);
@@ -124,7 +183,7 @@ var PyCodeObject = (function (_super) {
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
-        this.code = code;
+        this.code = code; //string representation of this code object's bytecode (contains opcodes e.g. output of dis.dis)
         this.consts = consts;
         this.names = names;
         this.varnames = varnames;
@@ -137,7 +196,6 @@ var PyCodeObject = (function (_super) {
     }
     PyCodeObject.prototype.toString = function () {
         var info = this.argcount + " " + this.nlocals + " " + this.stacksize + " " + this.flags;
-
         return "PyCodeObject: " + info;
     };
 
@@ -155,5 +213,5 @@ var PyCodeObject = (function (_super) {
         }
     };
     return PyCodeObject;
-})(APyComplex);
+})(PyComplex);
 exports.PyCodeObject = PyCodeObject;

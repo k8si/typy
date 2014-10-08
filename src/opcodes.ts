@@ -38,28 +38,83 @@ export enum Opcode {
     MAKE_FUNCTION = 0x84
 }
 
-//TODO is there a typechar for a plain old Set?
-export var type_map = {
-    NULL: "O",
-    NONE: "N",
-    FALSE: "F",
-    TRUE: "T",
-    STOPITER: "S",
-    ELLIPSIS: ".",
-    INT: "i",
-    INT64: "I",
-    FLOAT: "f",
-    BINARY_FLOAT: "g",
-    COMPLEX: "x",
-    BINARY_COMPLEX: "y",
-    LONG: "l",
-    STRING: "s",
-    INTERNED: "t",
-    STRINGREF: "R",
-    UNICODE: "u",
-    TUPLE: "(",
-    LIST: "[",
-    DICT: "{",
-    FROZENSET: ">",
-    CODE: "c"
+export enum TypeMap {
+    NULL = 79,
+    NONE = 78,
+    FALSE = 70,
+    TRUE = 84,
+    STOPITER = 83,
+    ELLIPSIS = 46,
+    INT = 105,
+    INT64 = 73,
+    FLOAT = 102,
+    BINARY_FLOAT = 103,
+    COMPLEX = 120,
+    BINARY_COMPLEX = 121,
+    LONG = 108,
+    STRING = 115,
+    INTERNED = 116,
+    STRINGREF = 82,
+    UNICODE = 117,
+    TUPLE = 40,
+    LIST = 91,
+    DICT = 123,
+    FROZENSET = 62,
+    CODE = 99
 };
+
+
+
+
+
+/*
+ NULL O 79
+ NONE N 78
+ FALSE F 70
+ TRUE T 84
+ STOPITER S 83
+ ELLIPSIS . 46
+ INT i 105
+ INT64 I 73
+ FLOAT f 102
+ BINARY_FLOAT g 103
+ COMPLEX x 120
+ BINARY_COMPLEX y 121
+ LONG l 108
+ STRING s 115
+ INTERNED t 116
+ STRINGREF R 82
+ UNICODE u 117
+ TUPLE ( 40
+ LIST [ 91
+ DICT { 123
+ FROZENSET > 62
+ CODE c 99
+ */
+
+//TODO is there a typechar for a plain old Set?
+//TODO this should be an enum instead ( use charcodes )
+//export var type_map = {
+//    NULL: "O",
+//    NONE: "N",
+//    FALSE: "F",
+//    TRUE: "T",
+//    STOPITER: "S",
+//    ELLIPSIS: ".",
+//    INT: "i",
+//    INT64: "I",
+//    FLOAT: "f",
+//    BINARY_FLOAT: "g",
+//    COMPLEX: "x",
+//    BINARY_COMPLEX: "y",
+//    LONG: "l",
+//    STRING: "s",
+//    INTERNED: "t",
+//    STRINGREF: "R",
+//    UNICODE: "u",
+//    TUPLE: "(",
+//    LIST: "[",
+//    DICT: "{",
+//    FROZENSET: ">",
+//    CODE: "c"
+//};

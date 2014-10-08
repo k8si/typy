@@ -36,28 +36,79 @@
 })(exports.Opcode || (exports.Opcode = {}));
 var Opcode = exports.Opcode;
 
+(function (TypeMap) {
+    TypeMap[TypeMap["NULL"] = 79] = "NULL";
+    TypeMap[TypeMap["NONE"] = 78] = "NONE";
+    TypeMap[TypeMap["FALSE"] = 70] = "FALSE";
+    TypeMap[TypeMap["TRUE"] = 84] = "TRUE";
+    TypeMap[TypeMap["STOPITER"] = 83] = "STOPITER";
+    TypeMap[TypeMap["ELLIPSIS"] = 46] = "ELLIPSIS";
+    TypeMap[TypeMap["INT"] = 105] = "INT";
+    TypeMap[TypeMap["INT64"] = 73] = "INT64";
+    TypeMap[TypeMap["FLOAT"] = 102] = "FLOAT";
+    TypeMap[TypeMap["BINARY_FLOAT"] = 103] = "BINARY_FLOAT";
+    TypeMap[TypeMap["COMPLEX"] = 120] = "COMPLEX";
+    TypeMap[TypeMap["BINARY_COMPLEX"] = 121] = "BINARY_COMPLEX";
+    TypeMap[TypeMap["LONG"] = 108] = "LONG";
+    TypeMap[TypeMap["STRING"] = 115] = "STRING";
+    TypeMap[TypeMap["INTERNED"] = 116] = "INTERNED";
+    TypeMap[TypeMap["STRINGREF"] = 82] = "STRINGREF";
+    TypeMap[TypeMap["UNICODE"] = 117] = "UNICODE";
+    TypeMap[TypeMap["TUPLE"] = 40] = "TUPLE";
+    TypeMap[TypeMap["LIST"] = 91] = "LIST";
+    TypeMap[TypeMap["DICT"] = 123] = "DICT";
+    TypeMap[TypeMap["FROZENSET"] = 62] = "FROZENSET";
+    TypeMap[TypeMap["CODE"] = 99] = "CODE";
+})(exports.TypeMap || (exports.TypeMap = {}));
+var TypeMap = exports.TypeMap;
+;
+/*
+NULL O 79
+NONE N 78
+FALSE F 70
+TRUE T 84
+STOPITER S 83
+ELLIPSIS . 46
+INT i 105
+INT64 I 73
+FLOAT f 102
+BINARY_FLOAT g 103
+COMPLEX x 120
+BINARY_COMPLEX y 121
+LONG l 108
+STRING s 115
+INTERNED t 116
+STRINGREF R 82
+UNICODE u 117
+TUPLE ( 40
+LIST [ 91
+DICT { 123
+FROZENSET > 62
+CODE c 99
+*/
 //TODO is there a typechar for a plain old Set?
-exports.type_map = {
-    NULL: "O",
-    NONE: "N",
-    FALSE: "F",
-    TRUE: "T",
-    STOPITER: "S",
-    ELLIPSIS: ".",
-    INT: "i",
-    INT64: "I",
-    FLOAT: "f",
-    BINARY_FLOAT: "g",
-    COMPLEX: "x",
-    BINARY_COMPLEX: "y",
-    LONG: "l",
-    STRING: "s",
-    INTERNED: "t",
-    STRINGREF: "R",
-    UNICODE: "u",
-    TUPLE: "(",
-    LIST: "[",
-    DICT: "{",
-    FROZENSET: ">",
-    CODE: "c"
-};
+//TODO this should be an enum instead ( use charcodes )
+//export var type_map = {
+//    NULL: "O",
+//    NONE: "N",
+//    FALSE: "F",
+//    TRUE: "T",
+//    STOPITER: "S",
+//    ELLIPSIS: ".",
+//    INT: "i",
+//    INT64: "I",
+//    FLOAT: "f",
+//    BINARY_FLOAT: "g",
+//    COMPLEX: "x",
+//    BINARY_COMPLEX: "y",
+//    LONG: "l",
+//    STRING: "s",
+//    INTERNED: "t",
+//    STRINGREF: "R",
+//    UNICODE: "u",
+//    TUPLE: "(",
+//    LIST: "[",
+//    DICT: "{",
+//    FROZENSET: ">",
+//    CODE: "c"
+//};
