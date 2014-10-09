@@ -6,6 +6,7 @@ import path = require('path');
 import opcodes = require('./opcodes');
 import utils = require('./utils');
 import pyo = require('./py_objects');
+import interp = require("./interpret");
 
 /**
  * All of this was stolen directly from UnPyc (http://sourceforge.net/projects/unpyc/)
@@ -14,57 +15,34 @@ import pyo = require('./py_objects');
 
 
 /*
-
  TODO verify the little/big endian-ness of things
-
- TODO we should take this stuff out of the global context (probably make them static methods of Parser?)
- the problem was, having "read_byte" as a method of Parser meant that I couldn't do the following:
-
- class Parser {
- ...
- fn(): string { return "foo"; }
-
- parse(): void {
- fs.readFile(file, function(err, data) {
- var s = this.fn(); ---> however, if I make fn() static, I can call Parser.fn() -- this seems weird but that's none of my business
- (also I guess one can't access class attributes (e.g. call "this.filename") from in here either?)
- }
- }
- }
-
-
+ TODO what is going on in Parser.read_type_long() ?
 
  */
 
-///** a global index into the pyc file we're reading (all of the read_ functions below incr this) **/
-//var pc = 0;
-
-//var PARSE_ERR: string = "parser error";
-//var tm = opcodes.TypeMap;
-
-
-class Parser {
+export class Parser {
 
     private filename: string;
     private static pc: number;
     private static type_map = opcodes.TypeMap;
     private static PARSE_ERR: string = "parser error";
 
-    /**
-     @param fname filename of *.pyc file to parse
-     @param offset where in the file to start reading
-     **/
     constructor(filename:string, offset:number=8) {
         this.filename = filename;
     }
 
+    // TODO would like to return a PyObject but can't figure out how to do that given async etc.
     public parse(offset:number): void {
         function callback(data, offset) {
             Parser.pc = 0;
-            var stuff = Parser.read_object(data.slice(offset, data.length));
-            console.log(typeof stuff);
-            console.log(stuff.toString());
-            stuff.print_co_code();
+            var pyObject = Parser.read_object(data.slice(offset, data.length));
+//            console.log(typeof pyObject);
+//            console.log(pyObject.toString());
+//            pyObject.print_co_code();
+
+            //now, disassemble the object's co_code
+            var interpreter = new interp.Interpreter();
+            interpreter.interpret(pyObject);
         }
         fs.readFile(this.filename, function(err, data) {
             if (err) throw err;
@@ -109,6 +87,13 @@ class Parser {
         return long;
     }
 
+    private static read_float(data:Buffer): number {
+        if (Parser.pc + 8 > data.length) throw new Error(Parser.PARSE_ERR);
+        var float = data.readDoubleLE(Parser.pc);
+        Parser.pc += 8;
+        return float;
+    }
+
 
     private static read_string(data:Buffer): Buffer {
         var coLength = Parser.read_long(data);
@@ -121,10 +106,8 @@ class Parser {
     private static read_tuple(data:Buffer): any[] {
         var n = Parser.read_long(data);
         console.assert(n >= 0, Parser.PARSE_ERR);
-//    var a = new Buffer(n);
         var a = [];
         for (var i = 0; i < n; i++) {
-//        a[i] = read_object(data);
             a.push(Parser.read_object(data));
         }
         return a;
@@ -132,22 +115,18 @@ class Parser {
 
     //TODO this could probably be more succint
     private static read_object(data:Buffer): any {
-//    console.log("read_object @ offset: " + pc);
         if (Parser.pc + 1 > data.length) throw new Error("parser error");
         var byte = data.readUInt8(Parser.pc); //read a char (1 byte)
         var offset = Parser.pc; //for bookkeeping
         Parser.pc++;
-//    var typechar = String.fromCharCode(byte);
         var tm = this.type_map;
         var val: any;
-//    switch (typechar) {
         switch(byte) {
 
             case tm.NULL:
                 return new pyo.PyNull(Parser.pc++);
 
             case tm.NONE:
-//            pc++;
                 console.log("found none");
                 return new pyo.PyNone(Parser.pc++);
 
@@ -183,7 +162,7 @@ class Parser {
 
             case tm.FLOAT:
                 console.log("found float");
-                return undefined; //TODO
+                return new pyo.PyFloat(offset, Parser.read_float(data));
 
             case tm.BINARY_FLOAT:
                 console.log("found binary_float");
@@ -260,10 +239,6 @@ class Parser {
 }
 
 
-//FIXME this may not work on Windows
-var f = fs.realpathSync("../630-proj1/pyc/func.pyc");
-var parser = new Parser(f);
-parser.parse(8);
 
 
 
