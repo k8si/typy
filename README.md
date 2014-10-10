@@ -18,6 +18,7 @@ CMPSCI 630 Project 1
 * [StackOverflow on the python interpreter](https://stackoverflow.com/questions/3299648/python-compilation-interpretation-process)
 * [old overview of the structure of .pyc files](http://nedbatchelder.com/blog/200804/the_structure_of_pyc_files.html)
 * [byteplay](https://wiki.python.org/moin/ByteplayDoc)
+* [byterun](https://github.com/nedbat/byterun/tree/master/byterun)
 
 ## TypeScript
 * [importing node modules with TypeScript](https://stackoverflow.com/questions/18378503/importing-node-modules-with-typescript)
