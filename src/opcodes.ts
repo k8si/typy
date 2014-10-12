@@ -11,6 +11,8 @@ export enum Opcode {
     ROT_TWO = 0x02,
     UNARY_POSITIVE = 0x0A,
 
+    BINARY_ADD = 0x17,
+
     STORE_SLICE = 0x28,
 
     STORE_SUBSCR = 0x3C,
@@ -32,9 +34,11 @@ export enum Opcode {
 
     JUMP_IF_TRUE = 0x70,
     LOAD_GLOBAL = 0x74,
+    LOAD_FAST = 0x7C, //[:LOAD_FAST, :local] --> LOAD_FAST [varnames[idx]] ?
 
     SETUP_EXCEPT = 0x79,
 
+    CALL_FUNCTION = 0x83,
     MAKE_FUNCTION = 0x84
 }
 
@@ -62,9 +66,6 @@ export enum TypeMap {
     FROZENSET = 62,
     CODE = 99
 };
-
-
-
 
 
 /*

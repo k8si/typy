@@ -8,6 +8,8 @@
     Opcode[Opcode["ROT_TWO"] = 0x02] = "ROT_TWO";
     Opcode[Opcode["UNARY_POSITIVE"] = 0x0A] = "UNARY_POSITIVE";
 
+    Opcode[Opcode["BINARY_ADD"] = 0x17] = "BINARY_ADD";
+
     Opcode[Opcode["STORE_SLICE"] = 0x28] = "STORE_SLICE";
 
     Opcode[Opcode["STORE_SUBSCR"] = 0x3C] = "STORE_SUBSCR";
@@ -29,9 +31,11 @@
 
     Opcode[Opcode["JUMP_IF_TRUE"] = 0x70] = "JUMP_IF_TRUE";
     Opcode[Opcode["LOAD_GLOBAL"] = 0x74] = "LOAD_GLOBAL";
+    Opcode[Opcode["LOAD_FAST"] = 0x7C] = "LOAD_FAST";
 
     Opcode[Opcode["SETUP_EXCEPT"] = 0x79] = "SETUP_EXCEPT";
 
+    Opcode[Opcode["CALL_FUNCTION"] = 0x83] = "CALL_FUNCTION";
     Opcode[Opcode["MAKE_FUNCTION"] = 0x84] = "MAKE_FUNCTION";
 })(exports.Opcode || (exports.Opcode = {}));
 var Opcode = exports.Opcode;

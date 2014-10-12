@@ -16,10 +16,7 @@ because I didn't feel like figuring it out at the time)
 /*
 TODO:
 PyUnicode
-PyInt64
 PyComplex (complex number)
-PyInterned
-PyStringRef
 PySet
 */
 var opcodes = require("./opcodes");
@@ -59,9 +56,30 @@ var PyNone = (function (_super) {
         _super.call(this, offset, "none");
         this.value = undefined;
     }
+    PyNone.prototype.toString = function () {
+        return "< PyNone >";
+    };
     return PyNone;
 })(PyPrimitive);
 exports.PyNone = PyNone;
+
+var PyStopIter = (function (_super) {
+    __extends(PyStopIter, _super);
+    function PyStopIter(offset) {
+        _super.call(this, offset, "stopiter");
+    }
+    return PyStopIter;
+})(PyPrimitive);
+exports.PyStopIter = PyStopIter;
+
+var PyEllipsis = (function (_super) {
+    __extends(PyEllipsis, _super);
+    function PyEllipsis(offset) {
+        _super.call(this, offset, "ellipsis");
+    }
+    return PyEllipsis;
+})(PyPrimitive);
+exports.PyEllipsis = PyEllipsis;
 
 var PyTrue = (function (_super) {
     __extends(PyTrue, _super);
@@ -69,6 +87,9 @@ var PyTrue = (function (_super) {
         _super.call(this, offset, "true");
         this.value = true;
     }
+    PyTrue.prototype.toString = function () {
+        return "< PyTrue >";
+    };
     return PyTrue;
 })(PyPrimitive);
 exports.PyTrue = PyTrue;
@@ -79,6 +100,9 @@ var PyFalse = (function (_super) {
         _super.call(this, offset, "false");
         this.value = false;
     }
+    PyFalse.prototype.toString = function () {
+        return "< PyFalse >";
+    };
     return PyFalse;
 })(PyPrimitive);
 exports.PyFalse = PyFalse;
@@ -101,16 +125,42 @@ var PyInt = (function (_super) {
         _super.call(this, offset, "int");
         this.value = value;
     }
+    PyInt.prototype.toString = function () {
+        return "<PyInt " + this.value.toString() + ">";
+    };
     return PyInt;
 })(PyComplex);
 exports.PyInt = PyInt;
 
+/**
+* TODO not sure if value should be type Long?
+*/
+var PyInt64 = (function (_super) {
+    __extends(PyInt64, _super);
+    function PyInt64(offset, value) {
+        _super.call(this, offset, "int64");
+        this.value = value;
+    }
+    PyInt64.prototype.toString = function () {
+        return "<PyInt64 " + this.value.toString() + ">";
+    };
+    return PyInt64;
+})(PyComplex);
+exports.PyInt64 = PyInt64;
+
+/**
+* TODO PyLong.value should be specified as type "Long" (or LongStatic?) however I get a compiler error:
+* /Users/kate/630/630-proj1/src/py_objects.ts(93,38): error TS4022: Type reference cannot refer to container 'Long'.
+*/
 var PyLong = (function (_super) {
     __extends(PyLong, _super);
     function PyLong(offset, value) {
         _super.call(this, offset, "long");
         this.value = value;
     }
+    PyLong.prototype.toString = function () {
+        return "<PyLong " + this.value.toString() + ">";
+    };
     return PyLong;
 })(PyComplex);
 exports.PyLong = PyLong;
@@ -121,6 +171,9 @@ var PyFloat = (function (_super) {
         _super.call(this, offset, "float");
         this.value = value;
     }
+    PyFloat.prototype.toString = function () {
+        return "<PyFloat " + this.value.toString() + ">";
+    };
     return PyFloat;
 })(PyComplex);
 exports.PyFloat = PyFloat;
@@ -131,9 +184,38 @@ var PyString = (function (_super) {
         _super.call(this, offset, "string");
         this.value = value;
     }
+    PyString.prototype.toString = function () {
+        return "<PyString '" + this.value.toString() + "'>";
+    };
     return PyString;
 })(PyComplex);
 exports.PyString = PyString;
+
+var PyInterned = (function (_super) {
+    __extends(PyInterned, _super);
+    function PyInterned(offset, value) {
+        _super.call(this, offset, "interned");
+        this.value = value;
+    }
+    PyInterned.prototype.toString = function () {
+        return "<PyInterned '" + this.value.toString() + "'>";
+    };
+    return PyInterned;
+})(PyComplex);
+exports.PyInterned = PyInterned;
+
+var PyStringRef = (function (_super) {
+    __extends(PyStringRef, _super);
+    function PyStringRef(offset, value) {
+        _super.call(this, offset, "stringref");
+        this.value = value;
+    }
+    PyStringRef.prototype.toString = function () {
+        return "<PyStringRef '" + this.value.toString() + "'>";
+    };
+    return PyStringRef;
+})(PyComplex);
+exports.PyStringRef = PyStringRef;
 
 var PyTuple = (function (_super) {
     __extends(PyTuple, _super);
@@ -141,6 +223,22 @@ var PyTuple = (function (_super) {
         _super.call(this, offset, "tuple");
         this.value = value;
     }
+    PyTuple.prototype.toString = function () {
+        var info = "";
+        if (this.value) {
+            for (var i = 0; i < this.value.length; i++) {
+                if (this.value[i])
+                    info = info + " " + this.value[i].toString();
+                else
+                    info = info + " [??] ";
+                info = info + ", ";
+            }
+        }
+        return " <PyTuple with " + this.value.length + " elements: ( " + info + " ) >";
+    };
+    PyTuple.prototype.length = function () {
+        return this.value.length;
+    };
     return PyTuple;
 })(PyComplex);
 exports.PyTuple = PyTuple;
@@ -195,17 +293,46 @@ var PyCodeObject = (function (_super) {
         this.lnotab = lnotab;
     }
     PyCodeObject.prototype.toString = function () {
-        var info = this.argcount + " " + this.nlocals + " " + this.stacksize + " " + this.flags;
-        return "PyCodeObject: " + info;
+        var info = "argcount:" + this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
+        var names;
+        if (this.names)
+            names = "names: " + this.names.toString();
+        else
+            names = "";
+        var name;
+        if (this.name)
+            name = "name: " + this.name.toString();
+        else
+            name = "";
+        var fname;
+        if (this.filename)
+            fname = "filename: " + this.filename;
+        else
+            fname = "";
+        return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
     };
 
     PyCodeObject.prototype.print_co_code = function () {
+        console.log("--> CO_CODE <--");
+        if (this.firstlineno)
+            console.log("firstlineno: " + this.firstlineno);
+        if (this.lnotab)
+            console.log("lnotab: " + this.lnotab.toString());
+        if (this.varnames)
+            console.log("varnames: " + this.varnames.toString());
+        if (this.consts)
+            console.log("consts: " + this.consts.toString());
+        if (this.freevars)
+            console.log("freevars: " + this.freevars.toString());
+        if (this.cellvars)
+            console.log("cellvars: " + this.cellvars.toString());
+
         var buf = this.code.value;
         if (buf != undefined) {
             for (var i = 0; i < buf.length; i += 3) {
-                console.log(buf[i].toString(16) + " -- " + opcodes.Opcode[buf[i]]);
-                console.log(buf[i + 1]);
-                console.log(buf[i + 2]);
+                console.log("\t" + buf[i].toString(16) + " -- " + opcodes.Opcode[buf[i]]);
+                console.log("\t" + buf[i + 1]);
+                console.log("\t" + buf[i + 2]);
             }
         } else {
             console.log("PyCodeObject's co_code is undefined.");
