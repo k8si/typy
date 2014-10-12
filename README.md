@@ -29,5 +29,8 @@ CMPSCI 630 Project 1
 * [TypeScript Collections](https://github.com/basarat/typescript-collections) - I can't figure how how to get this to work
 
 
-## Misc
+## In the Browser
+* [upload file using Express and node.js](https://stackoverflow.com/questions/23691194/node-express-file-upload)
+* [Express guide](http://expressjs.com/guide.html)
 * [BrowserFS](https://github.com/jvilk/BrowserFS)
+
