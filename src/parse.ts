@@ -18,6 +18,7 @@ import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/
 
 /*
  TODO verify the little/big endian-ness of things
+ TODO float vs long?
  */
 
 export class Parser {
@@ -33,21 +34,14 @@ export class Parser {
         Parser.internedStringList = new Array<Buffer>();
     }
 
-    // TODO would like to return a PyObject but can't figure out how to do that given async etc.
     public parse(offset:number): void {
-
         function callback(data, offset) {
             Parser.pc = 0;
             var pyObject = Parser.read_object(data.slice(offset, data.length));
-//            console.log(typeof pyObject);
-//            console.log(pyObject.toString());
-//            pyObject.print_co_code();
-
 //            now, disassemble the object's co_code
 //            var interpreter = new interp.Interpreter();
 //            interpreter.interpret(pyObject);
         }
-
         fs.readFile(this.filename, function(err, data) {
             if (err) throw err;
             callback(data, offset);
@@ -100,13 +94,6 @@ export class Parser {
         return long;
     }
 
-    /*
-     def r_unsigned_long(self):
-     if self.p + 4 > len(self.data): raise ParseErrorException(self.p)
-     offset = self.p
-     self.p += 4
-     return pyLong(offset, long(struct.unpack('=L', self.data[self.p - 4 : self.p])[0]), self.data[self.p - 4 : self.p])
-     */
     private static read_unsigned_long(data:Buffer): number {
         if (Parser.pc + 4 > data.length) throw new Error(Parser.PARSE_ERR);
         var ulong = data.readUInt32LE(Parser.pc);
@@ -132,51 +119,75 @@ export class Parser {
 
     private static read_tuple(data:Buffer): any[] {
         var n = Parser.read_long(data);
-//        console.log("found tuple of len " + n);
+//        console.log("got tuple of len " + n + ": ");
         console.assert(n >= 0, Parser.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
-            a.push(Parser.read_object(data));
+            var o = Parser.read_object(data);
+            a.push(o);
+//            a.push(Parser.read_object(data));
         }
+//        for (var i = 0; i < n; i++) {
+//            if (a[i]) console.log("\t" + a[i].toString());
+//            else console.log("\t" + a[i]);
+//        }
         return a;
     }
 
+    /*
+     def r_dict(self):
+     offset = self.p
+     d = {}
+     k = self.r_object()
+     while k.__class__.__name__ != 'pyNull':
+     d[k] = self.r_object()
+     k = self.r_object()
+     return pyDict(offset, d[k)
+     */
+    //TODO fix/make sure this works
+    private static read_dict(data:Buffer): utils.Dict<any> {
+        console.log("read_dict...");
+        var d = new utils.Dict<any>();
+        var k = Parser.read_object(data);
+        while (k != undefined && k != null) {
+            var val = Parser.read_object(data);
+            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, Parser.read_object(data));
+            else break;
+            k = val;
+        }
+        return d;
+    }
+
+
     //TODO this could probably be more succint
-    private static read_object(data:Buffer): any {
+    private static read_object(data:Buffer, extra?: string): any {
         if (Parser.pc + 1 > data.length) throw new Error("parser error");
         var byte = data.readUInt8(Parser.pc); //read a char (1 byte)
+//        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
         var offset = Parser.pc; //for bookkeeping
         Parser.pc++;
         var tm = this.type_map;
-//        console.log("curr typechar: " + byte + " " + String.fromCharCode(byte));
-//        var val: any;
         switch(byte) {
 
             case tm.NULL:
-//                console.log("found null");
                 return new pyo.PyNull(offset);
 
             case tm.NONE:
-//                console.log("found none");
                 return new pyo.PyNone(offset);
 
             case tm.STOPITER:
-//                console.log("found stopiter");
                 return new pyo.PyStopIter(offset);
 
             case tm.ELLIPSIS:
-//                console.log("found ellipsis");
                 return new pyo.PyEllipsis(offset);
 
             case tm.FALSE:
-//                console.log("found false");
                 return new pyo.PyFalse(offset);
 
             case tm.TRUE:
-//                console.log("found true");
                 return new pyo.PyTrue(offset);
 
-            case tm.INT:
+            case tm.INT: //TODO just return "number" instead ?
 //                console.log("found int @ " + offset);
                 return new pyo.PyInt(offset, Parser.read_long(data));
 
@@ -219,50 +230,51 @@ export class Parser {
 
             case tm.STRINGREF:
 //                console.log("found stringref @ " + offset);
-                var i = new pyo.PyLong(offset, Parser.read_long(data));
-                var interned = Parser.internedStringList[i.value];
+                var i = Parser.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
+                var interned = Parser.internedStringList[i];
                 return new pyo.PyStringRef(offset, interned);
 
             case tm.UNICODE:
-                return undefined; //TODO
+                var tmp = Parser.read_string(data);
+                return new pyo.PyUnicode(offset, tmp.toString('utf8')); //TODO
 
             case tm.TUPLE:
 //                console.log("found tuple @ " + offset);
                 return new pyo.PyTuple(offset, Parser.read_tuple(data));
 
             case tm.LIST:
-//                console.log("found list");
-                return undefined; //TODO
+                console.log("found list");
+                return new pyo.PyList(offset, Parser.read_tuple(data)); //TODO
 
             case tm.DICT:
-//                console.log("found dict");
-                return undefined; //TODO
+                console.log("found dict @ " + offset);
+                return new pyo.PyDict(offset, Parser.read_dict(data)); //TODO
 
             case tm.FROZENSET:
-                return undefined; //TODO
+                return new pyo.PyFrozenSet(offset, Parser.read_tuple(data));
+//                return undefined; //TODO
 
             case tm.CODE:
-//                console.log("found code @ " + offset);
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
-//                console.log("< read argcount, nlocals, stacksize, flags... >");
                 var argcount = Parser.read_long(data);
                 var nlocals = Parser.read_long(data);
                 var stacksize = Parser.read_long(data);
                 var flags = Parser.read_long(data);
 
                 //PyString
-                var code = Parser.read_object(data);
-
+//                console.log("code: " + String.fromCharCode(byte));
+                var code = Parser.read_object(data, "code");
 
                 //should be PyTuples
-                var consts = Parser.read_object(data);
-                var names = Parser.read_object(data);
-                var varnames = Parser.read_object(data);
-                var freevars = Parser.read_object(data);
-                var cellvars = Parser.read_object(data);
+//                console.log("consts: " + String.fromCharCode(byte));
+                var consts = Parser.read_object(data, "consts");
+                var names = Parser.read_object(data, "names");
+                var varnames = Parser.read_object(data, "varnames");
+                var freevars = Parser.read_object(data, "freevars");
+                var cellvars = Parser.read_object(data, "cellvars");
 
-                var filename = Parser.read_object(data);
-                var name = Parser.read_object(data);
+                var filename = Parser.read_object(data, "filename");
+                var name = Parser.read_object(data, "name");
 
                 var firstlineno = Parser.read_long(data);
                 var lnotab = Parser.read_long(data);
@@ -276,6 +288,7 @@ export class Parser {
 
                 console.log(obj.toString());
                 obj.print_co_code();
+//                obj.parse_co_code();
 
                 return obj;
 

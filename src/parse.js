@@ -4,7 +4,7 @@
 var fs = require('fs');
 
 var opcodes = require('./opcodes');
-
+var utils = require('./utils');
 var pyo = require('./py_objects');
 
 var Long = require('long');
@@ -15,6 +15,7 @@ var Long = require('long');
 */
 /*
 TODO verify the little/big endian-ness of things
+TODO float vs long?
 */
 var Parser = (function () {
     function Parser(filename, offset) {
@@ -22,19 +23,14 @@ var Parser = (function () {
         this.filename = filename;
         Parser.internedStringList = new Array();
     }
-    // TODO would like to return a PyObject but can't figure out how to do that given async etc.
     Parser.prototype.parse = function (offset) {
         function callback(data, offset) {
             Parser.pc = 0;
             var pyObject = Parser.read_object(data.slice(offset, data.length));
-            //            console.log(typeof pyObject);
-            //            console.log(pyObject.toString());
-            //            pyObject.print_co_code();
             //            now, disassemble the object's co_code
             //            var interpreter = new interp.Interpreter();
             //            interpreter.interpret(pyObject);
         }
-
         fs.readFile(this.filename, function (err, data) {
             if (err)
                 throw err;
@@ -90,13 +86,6 @@ var Parser = (function () {
         return long;
     };
 
-    /*
-    def r_unsigned_long(self):
-    if self.p + 4 > len(self.data): raise ParseErrorException(self.p)
-    offset = self.p
-    self.p += 4
-    return pyLong(offset, long(struct.unpack('=L', self.data[self.p - 4 : self.p])[0]), self.data[self.p - 4 : self.p])
-    */
     Parser.read_unsigned_long = function (data) {
         if (Parser.pc + 4 > data.length)
             throw new Error(Parser.PARSE_ERR);
@@ -124,47 +113,75 @@ var Parser = (function () {
     Parser.read_tuple = function (data) {
         var n = Parser.read_long(data);
 
-        //        console.log("found tuple of len " + n);
+        //        console.log("got tuple of len " + n + ": ");
         console.assert(n >= 0, Parser.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
-            a.push(Parser.read_object(data));
+            var o = Parser.read_object(data);
+            a.push(o);
+            //            a.push(Parser.read_object(data));
         }
+
+        //        for (var i = 0; i < n; i++) {
+        //            if (a[i]) console.log("\t" + a[i].toString());
+        //            else console.log("\t" + a[i]);
+        //        }
         return a;
     };
 
+    /*
+    def r_dict(self):
+    offset = self.p
+    d = {}
+    k = self.r_object()
+    while k.__class__.__name__ != 'pyNull':
+    d[k] = self.r_object()
+    k = self.r_object()
+    return pyDict(offset, d[k)
+    */
+    //TODO fix/make sure this works
+    Parser.read_dict = function (data) {
+        console.log("read_dict...");
+        var d = new utils.Dict();
+        var k = Parser.read_object(data);
+        while (k != undefined && k != null) {
+            var val = Parser.read_object(data);
+            if (val != undefined && val != null && val.value != undefined && val.value != null)
+                d.add(k, Parser.read_object(data));
+            else
+                break;
+            k = val;
+        }
+        return d;
+    };
+
     //TODO this could probably be more succint
-    Parser.read_object = function (data) {
+    Parser.read_object = function (data, extra) {
         if (Parser.pc + 1 > data.length)
             throw new Error("parser error");
         var byte = data.readUInt8(Parser.pc);
+
+        //        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
         var offset = Parser.pc;
         Parser.pc++;
         var tm = this.type_map;
-
         switch (byte) {
             case 79 /* NULL */:
-                //                console.log("found null");
                 return new pyo.PyNull(offset);
 
             case 78 /* NONE */:
-                //                console.log("found none");
                 return new pyo.PyNone(offset);
 
             case 83 /* STOPITER */:
-                //                console.log("found stopiter");
                 return new pyo.PyStopIter(offset);
 
             case 46 /* ELLIPSIS */:
-                //                console.log("found ellipsis");
                 return new pyo.PyEllipsis(offset);
 
             case 70 /* FALSE */:
-                //                console.log("found false");
                 return new pyo.PyFalse(offset);
 
             case 84 /* TRUE */:
-                //                console.log("found true");
                 return new pyo.PyTrue(offset);
 
             case 105 /* INT */:
@@ -209,49 +226,50 @@ var Parser = (function () {
 
             case 82 /* STRINGREF */:
                 //                console.log("found stringref @ " + offset);
-                var i = new pyo.PyLong(offset, Parser.read_long(data));
-                var interned = Parser.internedStringList[i.value];
+                var i = Parser.read_long(data);
+                var interned = Parser.internedStringList[i];
                 return new pyo.PyStringRef(offset, interned);
 
             case 117 /* UNICODE */:
-                return undefined;
+                var tmp = Parser.read_string(data);
+                return new pyo.PyUnicode(offset, tmp.toString('utf8'));
 
             case 40 /* TUPLE */:
                 //                console.log("found tuple @ " + offset);
                 return new pyo.PyTuple(offset, Parser.read_tuple(data));
 
             case 91 /* LIST */:
-                //                console.log("found list");
-                return undefined;
+                console.log("found list");
+                return new pyo.PyList(offset, Parser.read_tuple(data));
 
             case 123 /* DICT */:
-                //                console.log("found dict");
-                return undefined;
+                console.log("found dict @ " + offset);
+                return new pyo.PyDict(offset, Parser.read_dict(data));
 
             case 62 /* FROZENSET */:
-                return undefined;
+                return new pyo.PyFrozenSet(offset, Parser.read_tuple(data));
 
             case 99 /* CODE */:
-                //                console.log("found code @ " + offset);
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
-                //                console.log("< read argcount, nlocals, stacksize, flags... >");
                 var argcount = Parser.read_long(data);
                 var nlocals = Parser.read_long(data);
                 var stacksize = Parser.read_long(data);
                 var flags = Parser.read_long(data);
 
                 //PyString
-                var code = Parser.read_object(data);
+                //                console.log("code: " + String.fromCharCode(byte));
+                var code = Parser.read_object(data, "code");
 
                 //should be PyTuples
-                var consts = Parser.read_object(data);
-                var names = Parser.read_object(data);
-                var varnames = Parser.read_object(data);
-                var freevars = Parser.read_object(data);
-                var cellvars = Parser.read_object(data);
+                //                console.log("consts: " + String.fromCharCode(byte));
+                var consts = Parser.read_object(data, "consts");
+                var names = Parser.read_object(data, "names");
+                var varnames = Parser.read_object(data, "varnames");
+                var freevars = Parser.read_object(data, "freevars");
+                var cellvars = Parser.read_object(data, "cellvars");
 
-                var filename = Parser.read_object(data);
-                var name = Parser.read_object(data);
+                var filename = Parser.read_object(data, "filename");
+                var name = Parser.read_object(data, "name");
 
                 var firstlineno = Parser.read_long(data);
                 var lnotab = Parser.read_long(data);
@@ -261,6 +279,7 @@ var Parser = (function () {
                 console.log(obj.toString());
                 obj.print_co_code();
 
+                //                obj.parse_co_code();
                 return obj;
 
             default:
