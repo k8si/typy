@@ -350,14 +350,48 @@ var PyCodeObject = (function (_super) {
         return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
     };
 
-    PyCodeObject.prototype.parse_co_code = function () {
+    PyCodeObject.prototype.get_byteinfo_at = function (idx) {
+        var results = [];
+        var buf = this.code.value;
+        var i = idx;
+        if (buf && i < buf.length) {
+            var opc_name = opcodes.Opcode[buf[idx]];
+            results.push(opc_name);
+            i++;
+            if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length)
+                return results;
+            var opc = opcodes.OpsWithArgs[opc_name];
+
+            // from byterun: intArg = byteint(arg[0]) + (byteint(arg[1]) << 8)
+            var nextBytes = buf.slice(i, i + 2);
+            var intArg = nextBytes[0] + (nextBytes[1] << 8);
+            i += 2;
+            var argVal;
+            if (opc.args == "const") {
+                argVal = this.consts.get(intArg);
+            } else if (opc.args == "locals") {
+                argVal = this.varnames.get(intArg);
+            } else if (opc.args == "names") {
+                argVal = this.names.get(intArg);
+            } else {
+                console.log("args don't match: " + opc.args);
+            }
+
+            //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
+            if (argVal)
+                results.push(argVal);
+        } else
+            throw new Error("PyCodeObject: error in get_byteinfo_at");
+        return results;
+    };
+
+    PyCodeObject.prototype.parse_code = function () {
         var result = [];
         var buf = this.code.value;
         if (buf) {
             var i = 0;
             var thisResult = [];
             while (i < buf.length) {
-                //                console.log("\t OPNAME: " + buf[i].toString(16) + " " + opcodes.Opcode[buf[i]]); //+ " -- " + opcodes.BetterOpcodes[opcodes.Opcode[buf[i]]]);
                 var opc_name = opcodes.Opcode[buf[i]];
                 thisResult.push(opc_name);
                 i++;
@@ -421,30 +455,30 @@ var PyCodeObject = (function (_super) {
                 var opc_name = opcodes.Opcode[buf[i]];
                 i++;
 
-                if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length)
-                    break;
-
+                //                if (i + 2 >= buf.length) break;
+                //                if (!(opc_name in opcodes.OpsWithArgs) continue;//|| i + 2 >= buf.length) break;
                 var opc = opcodes.OpsWithArgs[opc_name];
+                if (opc) {
+                    //                var idx = buf.readInt16LE(i);
+                    var nextBytes = buf.slice(i, i + 2);
+                    var idx = nextBytes[0] + (nextBytes[1] << 8);
+                    i += 2;
 
-                //                var idx = buf.readInt16LE(i);
-                var nextBytes = buf.slice(i, i + 2);
-                var idx = nextBytes[0] + (nextBytes[1] << 8);
-                i += 2;
-
-                if (opc.args == "const") {
-                    console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
-                } else if (opc.args == "locals") {
-                    console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
-                } else if (opc.args == "names") {
-                    console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
-                } else if (opc.args == "jrel") {
-                    console.log("\t\targ: jrel arg = lasti + " + idx);
-                } else if (opc.args == "jabs") {
-                    console.log("\t\targ: jabs arg = " + idx);
-                } else {
-                    console.log("args don't match: " + opc.args);
+                    if (opc.args == "const") {
+                        console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                    } else if (opc.args == "locals") {
+                        console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
+                    } else if (opc.args == "names") {
+                        console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
+                    } else if (opc.args == "jrel") {
+                        console.log("\t\targ: jrel arg = lasti + " + idx);
+                    } else if (opc.args == "jabs") {
+                        console.log("\t\targ: jabs arg = " + idx);
+                    } else {
+                        console.log("args don't match: " + opc.args);
+                    }
+                    //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
                 }
-                //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
             }
         } else
             throw new Error("this PyCodeObject's co_code is undefined");

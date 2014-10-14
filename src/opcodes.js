@@ -71,6 +71,7 @@ exports.OpsWithArgs = {
     Opcode[Opcode["BINARY_AND"] = 0x40] = "BINARY_AND";
     Opcode[Opcode["GET_ITER"] = 0x44] = "GET_ITER";
     Opcode[Opcode["PRINT_ITEM"] = 0x47] = "PRINT_ITEM";
+    Opcode[Opcode["PRINT_NEWLINE"] = 0x48] = "PRINT_NEWLINE";
     Opcode[Opcode["INPLACE_XOR"] = 0x4E] = "INPLACE_XOR";
 
     Opcode[Opcode["RETURN_VALUE"] = 0x53] = "RETURN_VALUE";

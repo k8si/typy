@@ -54,6 +54,14 @@ export class Dict<V> {
     }
 
     size(): number { return this._keys.length; }
+
+    update(d:Dict<V>): void {
+        var k = d.keys();
+        var v = d.values();
+        for (var i = 0; i < k.length; i++) {
+            this.add(k[i], v[i]);
+        }
+    }
 }
 
 

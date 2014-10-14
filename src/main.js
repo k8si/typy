@@ -5,7 +5,7 @@
 var parse = require('./parse');
 var fs = require('fs');
 
-var f = fs.realpathSync("../630-proj1/pyc/iter_test.pyc");
+var f = fs.realpathSync("../630-proj1/pyc/noop.pyc");
 
 var parser = new parse.Parser(f);
 parser.parse(8);

@@ -54,6 +54,14 @@ var Dict = (function () {
     Dict.prototype.size = function () {
         return this._keys.length;
     };
+
+    Dict.prototype.update = function (d) {
+        var k = d.keys();
+        var v = d.values();
+        for (var i = 0; i < k.length; i++) {
+            this.add(k[i], v[i]);
+        }
+    };
     return Dict;
 })();
 exports.Dict = Dict;

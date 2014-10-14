@@ -6,7 +6,7 @@ var fs = require('fs');
 var opcodes = require('./opcodes');
 var utils = require('./utils');
 var pyo = require('./py_objects');
-
+var interp = require("./interpret");
 var Long = require('long');
 
 /**
@@ -26,7 +26,13 @@ var Parser = (function () {
     Parser.prototype.parse = function (offset) {
         function callback(data, offset) {
             Parser.pc = 0;
+            console.log("\n< PARSING >");
             var pyObject = Parser.read_object(data.slice(offset, data.length));
+            console.log("< /PARSING >\n");
+            var vm = new interp.VirtualMachine();
+            var result = vm.run_code(pyObject);
+            console.log("FINALLY: result = " + result.toString());
+            //            pyObject.parse_code();
             //            now, disassemble the object's co_code
             //            var interpreter = new interp.Interpreter();
             //            interpreter.interpret(pyObject);
