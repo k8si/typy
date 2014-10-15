@@ -3,6 +3,7 @@
 
 import pyo = require("./py_objects");
 import utils = require("./utils");
+import opcodes = require('./opcodes');
 
 //TODO Block class
 export class Block {
