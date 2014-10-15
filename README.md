@@ -35,3 +35,4 @@ CMPSCI 630 Project 1
 * [Express guide](http://expressjs.com/guide.html)
 * [BrowserFS](https://github.com/jvilk/BrowserFS)
 
+[Go to Javascript compiler](https://github.com/gopherjs/gopherjs)
