@@ -394,6 +394,16 @@ export class VirtualMachine {
         this.push(a);
     }
 
+    private ROT_THREE(): void{
+        console.log("\tROT_THREE");
+        var a=this.pop();
+        var b = this.pop();
+        var c= this.pop();
+        this.push(c);
+        this.push(b);
+        this.push(a);
+
+    }
     private RETURN_VALUE(): string {
         this.returnval = this.pop();
         console.log("\tRETURN_VALUE " + this.returnval.toString());
