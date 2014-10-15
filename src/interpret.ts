@@ -403,8 +403,12 @@ export class VirtualMachine {
         this.push(c);
         this.push(b);
         this.push(a);
-
     }
+
+    private DUP_TOP() : void{
+        this.push(this.top());
+    }
+
     private RETURN_VALUE(): string {
         this.returnval = this.pop();
         console.log("\tRETURN_VALUE " + this.returnval.toString());
