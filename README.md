@@ -1,6 +1,14 @@
 CMPSCI 630 Project 1
 =========
 
+compile for the browser: `tsc src/[source].ts --module amd`
+compile for node: `tsc src/[source].ts --module commonjs`
+
+run with node: `node [source].js`
+
+
+
+
 # Useful Links
 
 ## General Interpreters
