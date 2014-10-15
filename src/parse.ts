@@ -24,58 +24,56 @@ import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/
 export class Parser {
 
     private filename: string;
-    private static pc: number;
-    private static type_map = opcodes.TypeMap;
-    private static PARSE_ERR: string = "parser error";
-    private static internedStringList: Array<Buffer>;
+    private pc: number;
+    private type_map = opcodes.TypeMap;
+    private PARSE_ERR: string = "parser error";
+    private internedStringList: Array<Buffer>;
 
     constructor(filename:string, offset:number=8) {
         this.filename = filename;
-        Parser.internedStringList = new Array<Buffer>();
+        this.internedStringList = new Array<Buffer>();
     }
 
-    public parse(offset:number): void {
-        function callback(data, offset) {
-            Parser.pc = 0;
-            console.log("\n< PARSING >");
-            var pyObject = Parser.read_object(data.slice(offset, data.length));
-            console.log("< /PARSING >\n");
-            var vm = new interp.VirtualMachine();
-            var result = vm.run_code(pyObject);
-            console.log("FINALLY: result = " + result.toString());
-//            pyObject.parse_code();
-//            now, disassemble the object's co_code
-//            var interpreter = new interp.Interpreter();
-//            interpreter.interpret(pyObject);
-        }
-        fs.readFile(this.filename, function(err, data) {
-            if (err) throw err;
-            callback(data, offset);
-        });
+    public parse(bstring:string, offset:number): void {
+        this.pc = 0;
+        console.log("\n< PARSING >");
+        var buf = new Buffer(bstring.slice(offset, bstring.length));
+        var pyObject = this.read_object(buf);
+        console.log("< /PARSING >\n");
+
+////            var vm = new interp.VirtualMachine();
+////            var result = vm.run_code(pyObject);
+//
+////            console.log("FINALLY: result = " + result.toString());
+////            pyObject.parse_code();
+////            now, disassemble the object's co_code
+////            var interpreter = new interp.Interpreter();
+////            interpreter.interpret(pyObject);
+
     }
 
-    private static read_byte(data:Buffer): number {
-        if (Parser.pc+1 > data.length) throw new Error(this.PARSE_ERR);
-        return data.readUInt8(Parser.pc++);
+    private read_byte(data:Buffer): number {
+        if (this.pc+1 > data.length) throw new Error(this.PARSE_ERR);
+        return data.readUInt8(this.pc++);
     }
 
-    private static read_short(data:Buffer): number {
-        console.assert(Parser.pc + 2 <= data.length, Parser.PARSE_ERR);
-        var short = data.readInt16LE(Parser.pc); //TODO verify this is actually analogous to "read_short"
-        Parser.pc += 2;
-        return short;
-    }
-
-    /**
-     * read a 64 bit two's-complement integer value ??
-     *
-     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
-     * TODO should return type Long (or LongStatic?) but I get a compiler error
-     * **/
-    private static read_type_long(data:Buffer): any {
-        console.assert(Parser.pc + 8 <= data.length, Parser.PARSE_ERR);
-        var low32 = Parser.read_long(data);
-        var high32 = Parser.read_long(data);
+//    private static read_short(data:Buffer): number {
+//        console.assert(Parser.pc + 2 <= data.length, Parser.PARSE_ERR);
+//        var short = data.readInt16LE(Parser.pc); //TODO verify this is actually analogous to "read_short"
+//        Parser.pc += 2;
+//        return short;
+//    }
+//
+//    /**
+//     * read a 64 bit two's-complement integer value ??
+//     *
+//     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
+//     * TODO should return type Long (or LongStatic?) but I get a compiler error
+//     * **/
+    private read_type_long(data:Buffer): any {
+        console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
+        var low32 = this.read_long(data);
+        var high32 = this.read_long(data);
         return new Long(low32, high32);
 //        var n = Parser.read_long(data);
 //        var sign = 1;
@@ -92,44 +90,44 @@ export class Parser {
 //        }
 //        return l * sign;
     }
-
-    private static read_long(data:Buffer): number {
-        if (Parser.pc + 4 > data.length) throw new Error("parsing error");
-        var long = data.readInt32LE(Parser.pc);
-        Parser.pc += 4;
+//
+    private read_long(data:Buffer): number {
+        if (this.pc + 4 > data.length) throw new Error("parsing error");
+        var long = data.readInt32LE(this.pc);
+        this.pc += 4;
         return long;
     }
 
-    private static read_unsigned_long(data:Buffer): number {
-        if (Parser.pc + 4 > data.length) throw new Error(Parser.PARSE_ERR);
-        var ulong = data.readUInt32LE(Parser.pc);
-        Parser.pc += 4;
+    private read_unsigned_long(data:Buffer): number {
+        if (this.pc + 4 > data.length) throw new Error(this.PARSE_ERR);
+        var ulong = data.readUInt32LE(this.pc);
+        this.pc += 4;
         return ulong;
     }
-
-    private static read_float(data:Buffer): number {
-        if (Parser.pc + 8 > data.length) throw new Error(Parser.PARSE_ERR);
-        var float = data.readDoubleLE(Parser.pc);
-        Parser.pc += 8;
+//
+    private read_float(data:Buffer): number {
+        if (this.pc + 8 > data.length) throw new Error(this.PARSE_ERR);
+        var float = data.readDoubleLE(this.pc);
+        this.pc += 8;
         return float;
     }
-
-
-    private static read_string(data:Buffer): Buffer {
-        var coLength = Parser.read_long(data);
+//
+//
+    private read_string(data:Buffer): Buffer {
+        var coLength = this.read_long(data);
         var co_code = new Buffer(coLength);
-        data.copy(co_code, 0, Parser.pc, Parser.pc+coLength);
-        Parser.pc += coLength;
+        data.copy(co_code, 0, this.pc, this.pc+coLength);
+        this.pc += coLength;
         return co_code;
     }
-
-    private static read_tuple(data:Buffer): any[] {
-        var n = Parser.read_long(data);
+//
+    private read_tuple(data:Buffer): any[] {
+        var n = this.read_long(data);
 //        console.log("got tuple of len " + n + ": ");
-        console.assert(n >= 0, Parser.PARSE_ERR);
+        console.assert(n >= 0, this.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
-            var o = Parser.read_object(data);
+            var o = this.read_object(data);
             a.push(o);
 //            a.push(Parser.read_object(data));
         }
@@ -139,25 +137,25 @@ export class Parser {
 //        }
         return a;
     }
-
-    /*
-     def r_dict(self):
-     offset = self.p
-     d = {}
-     k = self.r_object()
-     while k.__class__.__name__ != 'pyNull':
-     d[k] = self.r_object()
-     k = self.r_object()
-     return pyDict(offset, d[k)
-     */
-    //TODO fix/make sure this works
-    private static read_dict(data:Buffer): utils.Dict<any> {
+//
+//    /*
+//     def r_dict(self):
+//     offset = self.p
+//     d = {}
+//     k = self.r_object()
+//     while k.__class__.__name__ != 'pyNull':
+//     d[k] = self.r_object()
+//     k = self.r_object()
+//     return pyDict(offset, d[k)
+//     */
+//    //TODO fix/make sure this works
+    private read_dict(data:Buffer): utils.Dict<any> {
         console.log("read_dict...");
         var d = new utils.Dict<any>();
-        var k = Parser.read_object(data);
+        var k = this.read_object(data);
         while (k != undefined && k != null) {
-            var val = Parser.read_object(data);
-            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, Parser.read_object(data));
+            var val = this.read_object(data);
+            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, this.read_object(data));
             else break;
             k = val;
         }
@@ -166,12 +164,14 @@ export class Parser {
 
 
     //TODO this could probably be more succint
-    private static read_object(data:Buffer, extra?: string): any {
-        if (Parser.pc + 1 > data.length) throw new Error("parser error");
-        var byte = data.readUInt8(Parser.pc); //read a char (1 byte)
+    private read_object(data:Buffer, extra?: string): any {
+        if (this.pc + 1 > data.length) throw new Error("parser error");
+        console.log(typeof data);
+//        var byte = 0;
+        var byte = data.readUInt8(this.pc); //read a char (1 byte)
 //        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
-        var offset = Parser.pc; //for bookkeeping
-        Parser.pc++;
+        var offset = this.pc; //for bookkeeping
+        this.pc++;
         var tm = this.type_map;
         switch(byte) {
 
@@ -195,22 +195,22 @@ export class Parser {
 
             case tm.INT: //TODO just return "number" instead ?
 //                console.log("found int @ " + offset);
-                return new pyo.PyInt(offset, Parser.read_long(data));
+                return new pyo.PyInt(offset, this.read_long(data));
 
             //TODO not sure if this is correct
             case tm.INT64:
 //                console.log("found int64");
-                var lo4 = Parser.read_unsigned_long(data);
-                var hi4 = Parser.read_long(data);
+                var lo4 = this.read_unsigned_long(data);
+                var hi4 = this.read_long(data);
                 return new pyo.PyInt64(offset, new Long(lo4, hi4));
 
             case tm.LONG:
 //                console.log("found long");
-                return new pyo.PyLong(offset, Parser.read_type_long(data));
+                return new pyo.PyLong(offset, this.read_type_long(data));
 
             case tm.FLOAT:
 //                console.log("found float");
-                return new pyo.PyFloat(offset, Parser.read_float(data));
+                return new pyo.PyFloat(offset, this.read_float(data));
 
             case tm.BINARY_FLOAT:
 //                console.log("found binary_float");
@@ -226,64 +226,64 @@ export class Parser {
 
             case tm.INTERNED:
 //                console.log("found interned @ " + offset);
-                var tmp = Parser.read_string(data);
-                Parser.internedStringList.push(tmp);
+                var tmp = this.read_string(data);
+                this.internedStringList.push(tmp);
                 return new pyo.PyInterned(offset, tmp);
 
             case tm.STRING:
 //                console.log("found string @ " + offset);
-                return new pyo.PyString(offset, Parser.read_string(data));
+                return new pyo.PyString(offset, this.read_string(data));
 
             case tm.STRINGREF:
 //                console.log("found stringref @ " + offset);
-                var i = Parser.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
-                var interned = Parser.internedStringList[i];
+                var i = this.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
+                var interned = this.internedStringList[i];
                 return new pyo.PyStringRef(offset, interned);
 
             case tm.UNICODE:
-                var tmp = Parser.read_string(data);
+                var tmp = this.read_string(data);
                 return new pyo.PyUnicode(offset, tmp.toString('utf8')); //TODO
 
             case tm.TUPLE:
 //                console.log("found tuple @ " + offset);
-                return new pyo.PyTuple(offset, Parser.read_tuple(data));
+                return new pyo.PyTuple(offset, this.read_tuple(data));
 
             case tm.LIST:
                 console.log("found list");
-                return new pyo.PyList(offset, Parser.read_tuple(data)); //TODO
+                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
             case tm.DICT:
                 console.log("found dict @ " + offset);
-                return new pyo.PyDict(offset, Parser.read_dict(data)); //TODO
+                return new pyo.PyDict(offset, this.read_dict(data)); //TODO
 
             case tm.FROZENSET:
-                return new pyo.PyFrozenSet(offset, Parser.read_tuple(data));
+                return new pyo.PyFrozenSet(offset, this.read_tuple(data));
 //                return undefined; //TODO
 
             case tm.CODE:
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
-                var argcount = Parser.read_long(data);
-                var nlocals = Parser.read_long(data);
-                var stacksize = Parser.read_long(data);
-                var flags = Parser.read_long(data);
+                var argcount = this.read_long(data);
+                var nlocals = this.read_long(data);
+                var stacksize = this.read_long(data);
+                var flags = this.read_long(data);
 
                 //PyString
 //                console.log("code: " + String.fromCharCode(byte));
-                var code = Parser.read_object(data, "code");
+                var code = this.read_object(data, "code");
 
                 //should be PyTuples
 //                console.log("consts: " + String.fromCharCode(byte));
-                var consts = Parser.read_object(data, "consts");
-                var names = Parser.read_object(data, "names");
-                var varnames = Parser.read_object(data, "varnames");
-                var freevars = Parser.read_object(data, "freevars");
-                var cellvars = Parser.read_object(data, "cellvars");
+                var consts = this.read_object(data, "consts");
+                var names = this.read_object(data, "names");
+                var varnames = this.read_object(data, "varnames");
+                var freevars = this.read_object(data, "freevars");
+                var cellvars = this.read_object(data, "cellvars");
 
-                var filename = Parser.read_object(data, "filename");
-                var name = Parser.read_object(data, "name");
+                var filename = this.read_object(data, "filename");
+                var name = this.read_object(data, "name");
 
-                var firstlineno = Parser.read_long(data);
-                var lnotab = Parser.read_long(data);
+                var firstlineno = this.read_long(data);
+                var lnotab = this.read_long(data);
 
                 var obj = new pyo.PyCodeObject(offset, //offset
                     argcount, nlocals, stacksize, flags,
@@ -299,6 +299,7 @@ export class Parser {
                 return obj;
 
             default:
+                console.log('unknown type');
                 return undefined;
         }
     }

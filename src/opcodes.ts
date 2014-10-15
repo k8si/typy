@@ -14,6 +14,8 @@ export class Code {
     }
 }
 
+//TODO finish these
+//from https://github.com/daeken/RMarshal/blob/master/lib/rmarshal/opcodes.rb
 export var OpsWithArgs = {
     STORE_NAME: new Code(0x5A, "names"),
     DELETE_NAME: new Code(0x5B, "names"),
@@ -52,6 +54,7 @@ export var OpsWithArgs = {
 
 
 // TODO finish these
+// from https://github.com/daeken/RMarshal/blob/master/lib/rmarshal/opcodes.rb
 export enum Opcode {
     STOP_CODE = 0x00,
     POP_TOP = 0x01,
@@ -123,6 +126,7 @@ export enum Opcode {
     MAKE_FUNCTION = 0x84
 }
 
+//TODO what about regular Sets (not Frozensets)?
 export enum TypeMap {
     NULL = 79,
     NONE = 78,
@@ -141,9 +145,9 @@ export enum TypeMap {
     INTERNED = 116,
     STRINGREF = 82,
     UNICODE = 117,
-    TUPLE = 40,
+    TUPLE = 40, // '('
     LIST = 91,
     DICT = 123,
     FROZENSET = 62,
-    CODE = 99
+    CODE = 99 // 'c'
 };
