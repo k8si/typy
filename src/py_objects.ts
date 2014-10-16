@@ -1,3 +1,6 @@
+/// <reference path="../lib/node/node.d.ts" />
+/// <reference path="../typings/long/long.d.ts" />
+
 /**
  * Created by kate on 9/28/14.
  */
@@ -24,90 +27,78 @@ import utils = require("./utils");
 import Long = require("long");
 
 
-
-export class PyObject { }
-
-// abstract wrapper class "simple" Python types which contain no data
-export class PyPrimitive extends PyObject {
-    offset:number; //location of the object's start index in the PYC file
-    type:string;
-    constructor(offset:number, type:string){
-        super();
-        this.offset = offset;
-        this.type = type;
-    }
+//make sure that all of the wrapper objects have value and type fields
+export interface PyObject {
+    value: any;
+    type: string;
+//    eq<T>(other: T): boolean;
+    toString(): string;
 }
 
-export class PyNull extends PyPrimitive {
-    value:any = null;
-    constructor(offset:number) {
-        super(offset, "null")
-    }
+export class PyNull implements PyObject {
+    public value = null;
+    public type = "null";
     public toString(): string { return "< PyNull >"; }
+//    public eq<T>(other: PyObject): boolean { return other.type == this.type; }
 }
 
-export class PyNone extends PyPrimitive {
-    value:any = undefined;
-    constructor(offset:number) { super(offset, "none"); }
+export class PyNone implements PyObject {
+    public value = undefined;
+    public type = "none";
     public toString(): string { return "< PyNone >"; }
 }
 
-export class PyStopIter extends PyPrimitive {
-    constructor(offset: number) { super(offset, "stopiter"); }
+export class PyStopIter implements PyObject {
+    public value = "stopiter";
+    public type = "stopiter";
     public toString(): string { return "< PyStopIter >"; }
 }
 
-export class PyEllipsis extends PyPrimitive {
-    constructor(offset: number) { super(offset, "ellipsis"); }
+export class PyEllipsis implements PyObject {
+    public value = "...";
+    public type = "ellipsis";
     public toString(): string { return "< PyEllipsis >"; }
 }
 
-export class PyTrue extends PyPrimitive {
-    value:boolean = true;
-    constructor(offset:number) {
-        super(offset, "true");
-    }
+export class PyTrue implements PyObject {
+    public value: boolean = true;
+    public type = "true";
     public toString(): string { return "< PyTrue >"; }
-
 }
 
-export class PyFalse extends PyPrimitive {
-    value:boolean = false;
-    constructor(offset:number) {
-        super(offset, "false");
-    }
+export class PyFalse implements PyObject {
+    public value:boolean = false;
+    public type = "false";
     public toString(): string { return "< PyFalse >"; }
 }
 
 
-// abstract wrapper class for "complex" Python types which contain data
-export class PyComplex extends PyObject {
-    offset:number;
-    type:string;
-    constructor(offset:number, type:string){
-        super();
-        this.offset = offset;
-        this.type = type;
-    }
-}
+//// abstract wrapper class for "complex" Python types which contain data
+//export class PyComplex extends PyObject {
+//    offset:number;
+//    type:string;
+//    constructor(offset:number, type:string){
+//        super(1, "");
+//        this.offset = offset;
+//        this.type = type;
+//    }
+//}
 
-export class PyInt extends PyComplex {
-    value:number;
-    constructor(offset:number, value:number){
-        super(offset, "int");
+export class PyInt implements PyObject {
+    public value:number;
+    public type = "int";
+    constructor(value: number){
         this.value=value;
     }
     public toString(): string { return "<PyInt "+ this.value.toString() + ">"; }
 
 }
 
-/**
- * TODO not sure if value should be type Long?
- */
-export class PyInt64 extends PyComplex {
-    value:any; //should be type Long?
-    constructor(offset:number, value:any) {
-        super(offset, "int64");
+//TODO should this really be of type Long ?
+export class PyInt64 implements PyObject {
+    public value: dcodeIO.Long; //should be type Long?
+    public type = "int64";
+    constructor(value: dcodeIO.Long) {
         this.value = value;
     }
     public toString(): string { return "<PyInt64 "+ this.value.toString() + ">"; }
@@ -119,68 +110,70 @@ export class PyInt64 extends PyComplex {
  * TODO PyLong.value should be specified as type "Long" (or LongStatic?) however I get a compiler error:
  * /Users/kate/630/630-proj1/src/py_objects.ts(93,38): error TS4022: Type reference cannot refer to container 'Long'.
  */
-export class PyLong extends PyComplex {
-    value:any;
-    constructor(offset:number, value:any){
-        super(offset, "long");
+export class PyLong implements PyObject {
+    public value: dcodeIO.Long;
+    public type = "long";
+    constructor(value: dcodeIO.Long){
         this.value=value;
     }
     public toString(): string { return "<PyLong "+ this.value.toString() + ">"; }
-
 }
 
-export class PyFloat extends PyComplex {
-    value:number;
-    constructor(offset:number, value:number) {
-        super(offset, "float");
+export class PyFloat implements PyObject {
+    public value: number; //TODO should be Long too?
+    public type = "float";
+    constructor(value: number) {
         this.value = value;
     }
     public toString(): string { return "<PyFloat "+ this.value.toString() + ">"; }
 
 }
 
-//TODO value should be string instead of Buffer?
-export class PyString extends PyComplex {
-    value:Buffer;
-    constructor(offset:number, value:Buffer){
-        super(offset, "string");
-        this.value=value;
+export class PyString implements PyObject {
+    public value: string;
+    public type = "string";
+    constructor(value: Buffer){
+        this.value=value.toString();
     }
+    //for reading bytecode byte by byte in PyCodeObject methods
+    public toBuffer(): Buffer { return new Buffer(this.value); }
     public toString(): string { return "<PyString '" + this.value.toString() + "'>"}
 }
 
-export class PyInterned extends PyComplex {
-    value: Buffer;
-    constructor(offset: number, value: Buffer) {
-        super(offset, "interned");
-        this.value = value;
+export class PyInterned implements PyObject {
+//    public value: Buffer;
+    public value: string;
+    public type = "interned-string";
+    constructor(value: Buffer) {
+        this.value = value.toString();
     }
     public toString(): string { return "<PyInterned '"+ this.value.toString() + "'>"; }
 
 }
 
-export class PyStringRef extends PyComplex {
-    value: Buffer;
-    constructor(offset: number, value: Buffer) {
-        super(offset, "stringref");
-        this.value = value;
+export class PyStringRef implements PyObject {
+//    public value: Buffer;
+    public value: string;
+    public type = "string-ref";
+    constructor(value: Buffer) {
+        this.value = value.toString();
     }
     public toString(): string { return "<PyStringRef '"+ this.value.toString() + "'>"; }
 }
 
-export class PyUnicode extends PyComplex {
-    value: string;
-    constructor(offset: number, value: string) {
-        super(offset, "unicode");
+export class PyUnicode implements PyObject {
+    public value: string;
+    public type = "unicode";
+    constructor(value: string) {
         this.value = value;
     }
     public toString(): string { return "<PyUnicode '" + this.value + "'>"; }
 }
 
-export class PyTuple extends PyComplex {
-    value:any[];
-    constructor(offset:number, value:any[]){
-        super(offset, "tuple");
+export class PyTuple implements PyObject {
+    public value:any[];
+    public type = "tuple";
+    constructor(value:any[]){
         this.value = value;
     }
     public toString(): string {
@@ -205,36 +198,37 @@ export class PyTuple extends PyComplex {
     }
 }
 
-export class PyList extends PyComplex {
-    value:any[];
-    constructor(offset:number, value:any[]){
-        super(offset, "list");
-        this.value = value;
-    }
+//export class PyList extends PyComplex {
+//    value:any[];
+//    constructor(offset:number, value:any[]){
+//        super(offset, "list");
+//        this.value = value;
+//    }
+//
+//}
+//
+//export class PyDict extends PyComplex {
+//    value: utils.Dict<any>;
+//    constructor(offset:number, value: utils.Dict<any>) {
+//        super(offset, "dict");
+//        this.value = value;
+//    }
+//    public toString(): string { return "< PyDict with " + this.value.size() + " items >"; }
+//}
+//
+//export class PyFrozenSet extends PyComplex {
+//    value:any;
+//    constructor(offset:number, value:any) {
+//        super(offset, "set");
+//        this.value = value;
+//    }
+//}
 
-}
-
-export class PyDict extends PyComplex {
-    value: utils.Dict<any>;
-    constructor(offset:number, value: utils.Dict<any>) {
-        super(offset, "dict");
-        this.value = value;
-    }
-    public toString(): string { return "< PyDict with " + this.value.size() + " items >"; }
-}
-
-export class PyFrozenSet extends PyComplex {
-    value:any;
-    constructor(offset:number, value:any) {
-        super(offset, "set");
-        this.value = value;
-    }
-}
 
 
-
-export class PyCodeObject extends PyComplex {
-
+export class PyCodeObject implements PyObject {
+    public value = "code-object";
+    public type = "code-object";
     argcount:number;
     nlocals:number;
     stacksize:number;
@@ -266,7 +260,7 @@ export class PyCodeObject extends PyComplex {
                 firstlineno:number,
                 lnotab:any)
     {
-        super(offset, "code_object");
+//        super(offset, "code_object");
         this.argcount=argcount;
         this.nlocals=nlocals;
         this.stacksize=stacksize;
@@ -305,12 +299,13 @@ export class PyCodeObject extends PyComplex {
      * @return results = [opcode name, opcode number, arg if there is one] **/
     public get_byteinfo_at(i:number, lasti:number): any[] {
         var results = [];
-        var op = this.code.value.readUInt8(i);
+        var byteCode = this.code.toBuffer();
+        var op = byteCode.readUInt8(i);
         var opcName = opcodes.Opcode[op];
         if (opcName) {results.push(opcName); results.push(op); }
         else throw new Error("error in get_byteinfo_at(): unknown opcode: " + op);
         if (op >= opcodes.HAVE_ARGUMENT) {
-            var nextBytes = this.code.value.slice(i+1, i+2);
+            var nextBytes = byteCode.slice(i+1, i+2);
             var intArg = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
             var argVal;
             if (this.contains(opcodes.hasArgInNames, op)) argVal = this.names.get(intArg);
@@ -336,11 +331,12 @@ export class PyCodeObject extends PyComplex {
         if (this.cellvars) console.log("cellvars: " + this.cellvars.toString());
         if (!this.code) throw new Error("this PyCodeObject doesnt have any code");
         if (!this.code.value) throw new Error("this PyCodeObjects code doesnt have a value");
+        var byteCode = this.code.toBuffer();
         for (var i = 0; i < this.code.value.length; i += 3) {
-            var op = this.code.value.readUInt8(i);
+            var op = byteCode.readUInt8(i);
             console.log("\topname: " + op.toString(16) + " " + opcodes.Opcode[op]);
             if (op >= opcodes.HAVE_ARGUMENT) {
-                var nextBytes = this.code.value.slice(i+1, i+2);
+                var nextBytes = byteCode.slice(i+1, i+2);
                 var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
                 if (this.contains(opcodes.hasArgInNames, op)) {
                     console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));

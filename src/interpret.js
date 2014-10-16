@@ -138,7 +138,7 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             }
             this.block_stack = [];
             this.stack = [];
-            this.generator = new pyo.PyNone(-1);
+            this.generator = new pyo.PyNone();
         }
         Frame.prototype.toString = function () {
             return "<Frame " + this.frame_code_object.filename + " " + this.lineno;
@@ -484,15 +484,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 default:
                     throw new Error("unknown opcode: " + opcode);
             }
-
-            //        if (op == "LOAD_CONST") this.LOAD_CONST(args);
-            //        if (op == "STORE_NAME") this.STORE_NAME(args);
-            //        if (op == "LOAD_NAME") this.LOAD_NAME(args);
-            //        if (op == "POP_TOP") { console.log("\tPOP_TOP"); this.pop(); }
-            //        if (op == "ROT_TWO") this.ROT_TWO();
-            //        if (op == "MAKE_FUNCTION") this.MAKE_FUNCTION(args);
-            //        if (op == "RETURN_VALUE") return this.RETURN_VALUE();
-            //        if (op == "")
             return undefined;
         };
 
@@ -562,9 +553,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             var globs = this.frame.globals;
             var fn = new Function("", code, globs, defaults, undefined, this);
             this.push(fn);
-        };
-
-        VirtualMachine.prototype.STORE_MAP = function () {
         };
 
         VirtualMachine.prototype.COMPARE_OP = function (arg) {

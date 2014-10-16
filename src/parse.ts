@@ -34,6 +34,7 @@ export class Parser {
     }
 
     public parse(bstring:string, offset:number): void {
+
         this.pc = 0;
         console.log("\nparsing...");
         var buf = new Buffer(bstring.slice(offset, bstring.length));
@@ -62,7 +63,7 @@ export class Parser {
 //     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
 //     * TODO should return type Long (or LongStatic?) but I get a compiler error
 //     * **/
-    private read_type_long(data:Buffer): any {
+    private read_type_long(data:Buffer): dcodeIO.Long {
         console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
         var low32 = this.read_long(data);
         var high32 = this.read_long(data);
@@ -168,41 +169,41 @@ export class Parser {
         switch(byte) {
 
             case tm.NULL:
-                return new pyo.PyNull(offset);
+                return new pyo.PyNull();
 
             case tm.NONE:
-                return new pyo.PyNone(offset);
+                return new pyo.PyNone();
 
             case tm.STOPITER:
-                return new pyo.PyStopIter(offset);
+                return new pyo.PyStopIter();
 
             case tm.ELLIPSIS:
-                return new pyo.PyEllipsis(offset);
+                return new pyo.PyEllipsis();
 
             case tm.FALSE:
-                return new pyo.PyFalse(offset);
+                return new pyo.PyFalse();
 
             case tm.TRUE:
-                return new pyo.PyTrue(offset);
+                return new pyo.PyTrue();
 
             case tm.INT: //TODO just return "number" instead ?
 //                console.log("found int @ " + offset);
-                return new pyo.PyInt(offset, this.read_long(data));
+                return new pyo.PyInt(this.read_long(data));
 
             //TODO not sure if this is correct
             case tm.INT64:
 //                console.log("found int64");
                 var lo4 = this.read_unsigned_long(data);
                 var hi4 = this.read_long(data);
-                return new pyo.PyInt64(offset, new Long(lo4, hi4));
+                return new pyo.PyInt64(new Long(lo4, hi4));
 
             case tm.LONG:
 //                console.log("found long");
-                return new pyo.PyLong(offset, this.read_type_long(data));
+                return new pyo.PyLong(this.read_type_long(data));
 
             case tm.FLOAT:
 //                console.log("found float");
-                return new pyo.PyFloat(offset, this.read_float(data));
+                return new pyo.PyFloat(this.read_float(data));
 
             case tm.BINARY_FLOAT:
 //                console.log("found binary_float");
@@ -220,36 +221,40 @@ export class Parser {
 //                console.log("found interned @ " + offset);
                 var tmp = this.read_string(data);
                 this.internedStringList.push(tmp);
-                return new pyo.PyInterned(offset, tmp);
+                return new pyo.PyInterned(tmp);
 
             case tm.STRING:
 //                console.log("found string @ " + offset);
-                return new pyo.PyString(offset, this.read_string(data));
+                return new pyo.PyString(this.read_string(data));
 
             case tm.STRINGREF:
 //                console.log("found stringref @ " + offset);
                 var i = this.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
                 var interned = this.internedStringList[i];
-                return new pyo.PyStringRef(offset, interned);
+                return new pyo.PyStringRef(interned);
 
             case tm.UNICODE:
                 var tmp = this.read_string(data);
-                return new pyo.PyUnicode(offset, tmp.toString('utf8')); //TODO
+                return new pyo.PyUnicode(tmp.toString('utf8')); //TODO
 
             case tm.TUPLE:
 //                console.log("found tuple @ " + offset);
-                return new pyo.PyTuple(offset, this.read_tuple(data));
+                return new pyo.PyTuple(this.read_tuple(data));
 
             case tm.LIST:
-                console.log("found list");
-                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
+                console.log("!!!! found list");
+                return undefined;
+//                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
             case tm.DICT:
-                console.log("found dict @ " + offset);
-                return new pyo.PyDict(offset, this.read_dict(data)); //TODO
+                console.log("!!!! found dict @ " + offset);
+                return undefined;
+//                return new pyo.PyDict(offset, this.read_dict(data)); //TODO
 
             case tm.FROZENSET:
-                return new pyo.PyFrozenSet(offset, this.read_tuple(data));
+                console.log("!!!! found frozenset @ " + offset);
+                return undefined;
+//                return new pyo.PyFrozenSet(offset, this.read_tuple(data));
 //                return undefined; //TODO
 
             case tm.CODE:

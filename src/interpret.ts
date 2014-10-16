@@ -136,7 +136,7 @@ export class Frame {
         }
         this.block_stack = [];
         this.stack = [];
-        this.generator = new pyo.PyNone(-1);
+        this.generator = new pyo.PyNone();
     }
     public toString(): string { return "<Frame " + this.frame_code_object.filename + " " + this.lineno; }
     public lineNumber(): number {
@@ -480,10 +480,6 @@ export class VirtualMachine {
         var globs = this.frame.globals;
         var fn = new Function("", code, globs, defaults, undefined, this);
         this.push(fn);
-    }
-
-    private STORE_MAP(): void {
-
     }
 
     private COMPARE_OP(arg:any): void {
