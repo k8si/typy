@@ -234,7 +234,7 @@ export class PyCodeObject implements PyObject {
     stacksize:number;
     flags:number;
     code:PyString;
-    consts:PyTuple;
+    consts:any; //PyTuple or PyStopIter
     names:PyTuple;
     varnames:PyTuple;
     freevars:PyTuple; //TODO what is this for?
@@ -278,18 +278,30 @@ export class PyCodeObject implements PyObject {
     }
 
     public toString(): string {
-        var info = "argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
-        var names;
-        if (this.names)
-            names = "names: " + this.names.toString();
-        else names = "";
-        var name;
-        if (this.name) name = "name: " + this.name.toString();
-        else name = "";
-        var fname;
-        if (this.filename) fname = "filename: " + this.filename;
-        else fname = "";
-        return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
+        var s = "<PyCodeObject ";
+        s += "argcount="+this.argcount+", ";
+        s += "nlocals="+this.nlocals+",";
+        s += "\n";
+        if (this.names) s += "names: " + this.names.toString() + "\n";
+        if (this.name) s += "name: " + this.name.toString() + "\n";
+        if (this.filename) s += "filename: " + this.filename.toString() + "\n";
+        if (this.consts) s += "consts: " + this.consts.toString() + "\n";
+
+        s += " >";
+        return s;
+//
+////        var info = "argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
+//        var names;
+//        if (this.names)
+//            names = "names: " + this.names.toString();
+//        else names = "";
+//        var name;
+//        if (this.name) name = "name: " + this.name.toString();
+//        else name = "";
+//        var fname;
+//        if (this.filename) fname = "filename: " + this.filename;
+//        else fname = "";
+//        return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
     }
 
     /** helper function because "in" is weird in javascript **/
@@ -309,11 +321,16 @@ export class PyCodeObject implements PyObject {
             var intArg = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
             var argVal;
             if (this.contains(opcodes.hasArgInNames, op)) argVal = this.names.get(intArg);
-            else if (this.contains(opcodes.hasArgInConsts, op)) argVal = this.consts.get(intArg);
+            else if (this.contains(opcodes.hasArgInConsts, op)) {
+                //TODO find a better way to handle this (seems like there may be a lot of exceptions like this)
+                if (this.consts.value == "stopiter") argVal = this.consts;
+                else argVal = this.consts.get(intArg);
+            }
             else if (this.contains(opcodes.hasArgInLocals, op)) argVal = this.varnames.get(intArg);
             else if (this.contains(opcodes.hasJrel, op)) argVal = lasti + intArg;
             else if (this.contains(opcodes.hasFree, op)) console.log("PyCodeObject.get_byteinfo_at(): HASFREE ARG NOT YET IMPLEMENTED"); //TODO
             else if (this.contains(opcodes.hasCompare, op) || this.contains(opcodes.hasJabs, op)) argVal = intArg;
+//            else argVal = intArg;
             else throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
             results.push(argVal);
         }
@@ -338,10 +355,14 @@ export class PyCodeObject implements PyObject {
             if (op >= opcodes.HAVE_ARGUMENT) {
                 var nextBytes = byteCode.slice(i+1, i+2);
                 var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+
                 if (this.contains(opcodes.hasArgInNames, op)) {
                     console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
                 } else if (this.contains(opcodes.hasArgInConsts, op)) {
-                    console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+
+                    if (this.consts.value == "stopiter") console.log("\t\targ: consts @ " + idx + " : " + this.consts.toString());
+                    else console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+
                 } else if (this.contains(opcodes.hasArgInLocals, op)) {
                     console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
                 } else if (this.contains(opcodes.hasJrel, op)) {

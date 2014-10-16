@@ -136,6 +136,8 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.block_stack = [];
             this.stack = [];
             this.generator = new pyo.PyNone();
+            //        this.builtins = new utils.Dict<any>();
+            //        this.builtins.add("range", "<NOT YET IMPLEMENTED>");
         }
         Frame.prototype.toString = function () {
             return "<Frame " + this.frame_code_object.filename + " " + this.lineno;
@@ -193,9 +195,10 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.frame.lasti = jump;
         };
 
-        VirtualMachine.prototype.pushBlock = function (type, handler, level) {
+        VirtualMachine.prototype.push_block = function (type, handler, level) {
             if (!level)
                 level = this.frame.stack.length;
+            this.frame.block_stack.push(new Block(type, handler, level));
             //       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
         };
 
@@ -481,6 +484,9 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 case 107 /* COMPARE_OP */:
                     this.COMPARE_OP(arg);
                     break;
+                case 120 /* SETUP_LOOP */:
+                    this.SETUP_LOOP(arg);
+                    break;
                 case 110 /* JUMP_FORWARD */:
                     this.JUMP_FORWARD(arg);
                     break;
@@ -488,8 +494,12 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     this.POP_JUMP_IF_FALSE(arg);
                     break;
                 case 71 /* PRINT_ITEM */:
+                    //TODO we should make some kind of "stdout" for the browser (to print to the actual HTML page)
                     var item = this.pop();
                     console.log(" >> " + item.toString());
+                    break;
+                case 72 /* PRINT_NEWLINE */:
+                    console.log(" >> ");
                     break;
                 default:
                     throw new Error("unknown opcode: " + opcode);
@@ -502,11 +512,15 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.push(constant);
         };
 
+        //TODO there are bugs here I think
         VirtualMachine.prototype.STORE_NAME = function (n) {
             console.log("\tSTORE_NAME " + n.toString());
+
+            //        console.assert(n.type == "string" || n.type == "interned-string" || n.type == "string-ref");
             this.frame.locals.add(n.value.toString(), this.pop());
         };
 
+        //TODO there are bugs here I think
         VirtualMachine.prototype.LOAD_NAME = function (n) {
             console.log("\tLOAD_NAME " + n.toString());
             var frame = this.frame;
@@ -516,8 +530,9 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 val = frame.locals.get(name);
             else if (frame.globals.contains(name))
                 val = frame.globals.get(name);
-            else
+            else {
                 throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
+            }
             if (val)
                 this.push(val);
         };
@@ -584,6 +599,7 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     break;
                 case 4:
                     result = x.value > y.value;
+                    console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " > " + y.toString() + " => " + result);
                     break;
                 case 5:
                     result = x.value >= y.value;
@@ -591,13 +607,19 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 default:
                     break;
             }
-            console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
-
-            //        var result = COMPARE_OPS[arg](x, y);
+            console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " <?> " + y.toString() + " => " + result);
+            if (!result)
+                throw new Error("fail");
             this.push(result);
         };
 
+        VirtualMachine.prototype.SETUP_LOOP = function (dest) {
+            console.log("\tSETUP_LOOP");
+            this.push_block("loop", dest);
+        };
+
         VirtualMachine.prototype.JUMP_FORWARD = function (jump) {
+            console.log("\tJUMP_FORWARD: jump = " + jump.toString());
             this.jump(jump);
         };
 

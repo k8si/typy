@@ -277,8 +277,8 @@ define(["require", "exports", './opcodes', './utils', './py_objects', "./interpr
                     var obj = new pyo.PyCodeObject(offset, argcount, nlocals, stacksize, flags, code, consts, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
 
                     console.log(obj.toString());
-                    obj.print_co_code();
 
+                    //                obj.print_co_code();
                     //                obj.parse_co_code();
                     return obj;
 

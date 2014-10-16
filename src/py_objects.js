@@ -273,23 +273,34 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
             this.lnotab = lnotab;
         }
         PyCodeObject.prototype.toString = function () {
-            var info = "argcount:" + this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
-            var names;
+            var s = "<PyCodeObject ";
+            s += "argcount=" + this.argcount + ", ";
+            s += "nlocals=" + this.nlocals + ",";
+            s += "\n";
             if (this.names)
-                names = "names: " + this.names.toString();
-            else
-                names = "";
-            var name;
+                s += "names: " + this.names.toString() + "\n";
             if (this.name)
-                name = "name: " + this.name.toString();
-            else
-                name = "";
-            var fname;
+                s += "name: " + this.name.toString() + "\n";
             if (this.filename)
-                fname = "filename: " + this.filename;
-            else
-                fname = "";
-            return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
+                s += "filename: " + this.filename.toString() + "\n";
+            if (this.consts)
+                s += "consts: " + this.consts.toString() + "\n";
+
+            s += " >";
+            return s;
+            //
+            ////        var info = "argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
+            //        var names;
+            //        if (this.names)
+            //            names = "names: " + this.names.toString();
+            //        else names = "";
+            //        var name;
+            //        if (this.name) name = "name: " + this.name.toString();
+            //        else name = "";
+            //        var fname;
+            //        if (this.filename) fname = "filename: " + this.filename;
+            //        else fname = "";
+            //        return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
         };
 
         /** helper function because "in" is weird in javascript **/
@@ -315,9 +326,13 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
                 var argVal;
                 if (this.contains(opcodes.hasArgInNames, op))
                     argVal = this.names.get(intArg);
-                else if (this.contains(opcodes.hasArgInConsts, op))
-                    argVal = this.consts.get(intArg);
-                else if (this.contains(opcodes.hasArgInLocals, op))
+                else if (this.contains(opcodes.hasArgInConsts, op)) {
+                    //TODO find a better way to handle this (seems like there may be a lot of exceptions like this)
+                    if (this.consts.value == "stopiter")
+                        argVal = this.consts;
+                    else
+                        argVal = this.consts.get(intArg);
+                } else if (this.contains(opcodes.hasArgInLocals, op))
                     argVal = this.varnames.get(intArg);
                 else if (this.contains(opcodes.hasJrel, op))
                     argVal = lasti + intArg;
@@ -359,10 +374,14 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
                 if (op >= opcodes.HAVE_ARGUMENT) {
                     var nextBytes = byteCode.slice(i + 1, i + 2);
                     var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+
                     if (this.contains(opcodes.hasArgInNames, op)) {
                         console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
                     } else if (this.contains(opcodes.hasArgInConsts, op)) {
-                        console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                        if (this.consts.value == "stopiter")
+                            console.log("\t\targ: consts @ " + idx + " : " + this.consts.toString());
+                        else
+                            console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
                     } else if (this.contains(opcodes.hasArgInLocals, op)) {
                         console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
                     } else if (this.contains(opcodes.hasJrel, op)) {

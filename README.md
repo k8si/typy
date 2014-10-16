@@ -43,4 +43,8 @@ run with node: `node [source].js`
 * [Express guide](http://expressjs.com/guide.html)
 * [BrowserFS](https://github.com/jvilk/BrowserFS)
 
+## Testing
+* [Karma](http://karma-runner.github.io/0.12/index.html)
+* [Jasmine](http://jasmine.github.io/2.0/introduction.html)
+
 [Go to Javascript compiler](https://github.com/gopherjs/gopherjs)

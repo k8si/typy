@@ -7,6 +7,7 @@ import opcodes = require('./opcodes');
 
 //TODO Block class
 //byterun: Block = collections.namedtuple("Block", "type, handler, level")
+
 export class Block {
     public type: any;
     public handler: any;
@@ -107,12 +108,13 @@ export class Frame {
     locals: utils.Dict<any>; //any; // TODO should be Dict ?
     back: Frame;
     stack: any[]; //TODO a stack of what?
-    builtins: any[];
+//    builtins: utils.Dict<any>;
     lineno: number;
     lasti: number;
     cells: utils.Dict<any>;
     block_stack: Block[];
     generator:any;
+    builtins: utils.Dict<any>;
 
     constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
         this.frame_code_object = code; this.globals = globals; this.locals = locals; this.back = back;
@@ -132,6 +134,8 @@ export class Frame {
         this.block_stack = [];
         this.stack = [];
         this.generator = new pyo.PyNone();
+//        this.builtins = new utils.Dict<any>();
+//        this.builtins.add("range", "<NOT YET IMPLEMENTED>");
     }
     public toString(): string { return "<Frame " + this.frame_code_object.filename + " " + this.lineno; }
     public lineNumber(): number {
@@ -174,8 +178,9 @@ export class VirtualMachine {
     /** move the bytecode pointer to 'jump', so it will execute next **/
     private jump(jump:number): void { this.frame.lasti = jump; }
 
-    private pushBlock(type:any, handler?:any, level?:any): void {
+    private push_block(type:any, handler?:any, level?:any): void {
         if (!level) level = this.frame.stack.length;
+        this.frame.block_stack.push(new Block(type, handler, level));
 //       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
     }
 
@@ -409,6 +414,7 @@ export class VirtualMachine {
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
             case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
+            case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.JUMP_FORWARD: this.JUMP_FORWARD(arg); break;
             case opcodes.Opcode.POP_JUMP_IF_FALSE: this.POP_JUMP_IF_FALSE(arg); break;
             case opcodes.Opcode.PRINT_ITEM:
@@ -416,7 +422,10 @@ export class VirtualMachine {
                 var item = this.pop();
                 console.log(" >> " + item.toString());
                 break;
-            default: throw new Error("unknown opcode: " + opcode);
+            case opcodes.Opcode.PRINT_NEWLINE: console.log(" >> "); break;
+            default:
+//                this.frame.frame_code_object.print_co_code();
+                throw new Error("unknown opcode: " + opcode);
         }
         return undefined;
     }
@@ -426,20 +435,25 @@ export class VirtualMachine {
         this.push(constant);
     }
 
-    private STORE_NAME(n:pyo.PyInterned): void {
+    //TODO there are bugs here I think
+    private STORE_NAME(n: any): void {
         console.log("\tSTORE_NAME " + n.toString());
+//        console.assert(n.type == "string" || n.type == "interned-string" || n.type == "string-ref");
         this.frame.locals.add(n.value.toString(), this.pop());
     }
 
-    private LOAD_NAME(n:pyo.PyInterned): void {
+    //TODO there are bugs here I think
+    private LOAD_NAME(n: any): void {
         console.log("\tLOAD_NAME " + n.toString());
         var frame = this.frame;
         var name = n.value.toString();
         var val;
         if (frame.locals.contains(name)) val = frame.locals.get(name);
         else if (frame.globals.contains(name)) val = frame.globals.get(name);
-//TODO        else if (frame.builtins.contains(n)) val = frame.builtins.get(n);
-        else throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
+//        else if (frame.builtins.contains(n)) val = frame.builtins.get(n);
+        else {
+            throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
+        }
         if (val) this.push(val);
     }
 
@@ -494,16 +508,23 @@ export class VirtualMachine {
             case 1: result = x.value <= y.value; break;
             case 2: result = x.value == y.value; break;
             case 3: result = x.value != y.value; break;
-            case 4: result = x.value > y.value; break;
+            case 4: result = x.value > y.value; console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " > " + y.toString() + " => " + result); break;
             case 5: result = x.value >= y.value; break;
             default: break;
             //TODO case 6: x IS y; case 7: x IS NOT y; default: goto slow_compare
         }
-        console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
+        console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " <?> " + y.toString() + " => " + result);
+        if (!result) throw new Error("fail");
         this.push(result);
     }
 
+    private SETUP_LOOP(dest:number): void {
+        console.log("\tSETUP_LOOP");
+        this.push_block("loop", dest);
+    }
+
     private JUMP_FORWARD(jump:number): void {
+        console.log("\tJUMP_FORWARD: jump = " + jump.toString());
         this.jump(jump);
     }
 

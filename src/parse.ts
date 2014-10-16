@@ -290,7 +290,7 @@ export class Parser {
                 );
 
                 console.log(obj.toString());
-                obj.print_co_code();
+//                obj.print_co_code();
 //                obj.parse_co_code();
 
                 return obj;
