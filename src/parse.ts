@@ -1,6 +1,5 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
-//This is to check commit.
 
 import fs = require('fs');
 import path = require('path');
@@ -11,7 +10,7 @@ import interp = require("./interpret");
 import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/blob/master/long/long.d.ts
 
 /**
- * All of this was stolen directly from UnPyc (http://sourceforge.net/projects/unpyc/)
+ * All of this was stolen from UnPyc (http://sourceforge.net/projects/unpyc/)
  * All I did was port Python (from UnPyc/Parse.py) -> Typescript
  */
 
@@ -36,20 +35,13 @@ export class Parser {
 
     public parse(bstring:string, offset:number): void {
         this.pc = 0;
-        console.log("\n< PARSING >");
+        console.log("\nparsing...");
         var buf = new Buffer(bstring.slice(offset, bstring.length));
         var pyObject = this.read_object(buf);
-        console.log("< /PARSING >\n");
-
-////            var vm = new interp.VirtualMachine();
-////            var result = vm.run_code(pyObject);
-//
-////            console.log("FINALLY: result = " + result.toString());
-////            pyObject.parse_code();
-////            now, disassemble the object's co_code
-////            var interpreter = new interp.Interpreter();
-////            interpreter.interpret(pyObject);
-
+        console.log("done. starting interpreter...");
+        var vm = new interp.VirtualMachine();
+        var result = vm.run_code(pyObject);
+        console.log("finished.");
     }
 
     private read_byte(data:Buffer): number {

@@ -1,9 +1,8 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
-//This is to check commit.
-define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], function(require, exports, opcodes, utils, pyo, Long) {
+define(["require", "exports", './opcodes', './utils', './py_objects', "./interpret", 'long'], function(require, exports, opcodes, utils, pyo, interp, Long) {
     /**
-    * All of this was stolen directly from UnPyc (http://sourceforge.net/projects/unpyc/)
+    * All of this was stolen from UnPyc (http://sourceforge.net/projects/unpyc/)
     * All I did was port Python (from UnPyc/Parse.py) -> Typescript
     */
     /*
@@ -20,18 +19,13 @@ define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], f
         }
         Parser.prototype.parse = function (bstring, offset) {
             this.pc = 0;
-            console.log("\n< PARSING >");
+            console.log("\nparsing...");
             var buf = new Buffer(bstring.slice(offset, bstring.length));
             var pyObject = this.read_object(buf);
-            console.log("< /PARSING >\n");
-            ////            var vm = new interp.VirtualMachine();
-            ////            var result = vm.run_code(pyObject);
-            //
-            ////            console.log("FINALLY: result = " + result.toString());
-            ////            pyObject.parse_code();
-            ////            now, disassemble the object's co_code
-            ////            var interpreter = new interp.Interpreter();
-            ////            interpreter.interpret(pyObject);
+            console.log("done. starting interpreter...");
+            var vm = new interp.VirtualMachine();
+            var result = vm.run_code(pyObject);
+            console.log("finished.");
         };
 
         Parser.prototype.read_byte = function (data) {

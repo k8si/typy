@@ -298,74 +298,31 @@ export class PyCodeObject extends PyComplex {
         return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
     }
 
-    public get_byteinfo_at(idx:number): any[] {
+    /** helper function because "in" is weird in javascript **/
+    private contains(list:any[], item:any): boolean { return list.indexOf(item) >= 0 ;}
+
+    /** used by the VM to get the opcode name at index i + the opcode's arg if it has one
+     * @return results = [opcode name, opcode number, arg if there is one] **/
+    public get_byteinfo_at(i:number, lasti:number): any[] {
         var results = [];
-        var buf = this.code.value;
-        var i = idx;
-        if (buf && i < buf.length) {
-            var opc_name = opcodes.Opcode[buf[idx]];
-            results.push(opc_name);
-            i++;
-            if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length) return results;
-            var opc = opcodes.OpsWithArgs[opc_name];
-            // from byterun: intArg = byteint(arg[0]) + (byteint(arg[1]) << 8)
-            var nextBytes = buf.slice(i, i+2);
-            var intArg = nextBytes[0] + (nextBytes[1] << 8);
-            i += 2;
+        var op = this.code.value.readUInt8(i);
+        var opcName = opcodes.Opcode[op];
+        if (opcName) {results.push(opcName); results.push(op); }
+        else throw new Error("error in get_byteinfo_at(): unknown opcode: " + op);
+        if (op >= opcodes.HAVE_ARGUMENT) {
+            var nextBytes = this.code.value.slice(i+1, i+2);
+            var intArg = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
             var argVal;
-            if (opc.args == "const") {
-                argVal = this.consts.get(intArg);
-            } else if (opc.args == "locals") {
-                argVal = this.varnames.get(intArg);
-            } else if (opc.args == "names") {
-                argVal = this.names.get(intArg);
-            } else {
-                console.log("args don't match: " + opc.args);
-            }
-            //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-            if (argVal) results.push(argVal);
-        } else throw new Error("PyCodeObject: error in get_byteinfo_at");
-        return results;
-    }
-
-    public parse_code(): any[] {
-        var result = [];
-        var buf = this.code.value;
-        if (buf) {
-            var i = 0;
-            var thisResult = [];
-            while (i < buf.length) {
-                var opc_name = opcodes.Opcode[buf[i]];
-                thisResult.push(opc_name);
-                i++;
-                if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length) break;
-                var opc = opcodes.OpsWithArgs[opc_name];
-                // from byterun: intArg = byteint(arg[0]) + (byteint(arg[1]) << 8)
-                var nextBytes = buf.slice(i, i+2);
-                var intArg = nextBytes[0] + (nextBytes[1] << 8);
-                i += 2;
-                var argVal;
-                if (opc.args == "const") {
-                    argVal = this.consts.get(intArg);
-                } else if (opc.args == "locals") {
-                    argVal = this.varnames.get(intArg);
-                } else if (opc.args == "names") {
-                    if (!this.names) throw new Error("PyCodeObj: this.names is undef");
-                    argVal = this.names.get(intArg);
-                } else {
-                    console.log("args don't match: " + opc.args);
-                }
-                //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-
-                if (argVal) thisResult.push(argVal.toString());
-                result.push(thisResult);
-            }
-        } else throw new Error("this PyCodeObject's co_code is undefined");
-
-        for (var k = 0; k < result.length; k++) {
-            console.log(result[k]);
+            if (this.contains(opcodes.hasArgInNames, op)) argVal = this.names.get(intArg);
+            else if (this.contains(opcodes.hasArgInConsts, op)) argVal = this.consts.get(intArg);
+            else if (this.contains(opcodes.hasArgInLocals, op)) argVal = this.varnames.get(intArg);
+            else if (this.contains(opcodes.hasJrel, op)) argVal = lasti + intArg;
+            else if (this.contains(opcodes.hasFree, op)) console.log("PyCodeObject.get_byteinfo_at(): HASFREE ARG NOT YET IMPLEMENTED"); //TODO
+            else if (this.contains(opcodes.hasCompare, op) || this.contains(opcodes.hasJabs, op)) argVal = intArg;
+            else throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
+            results.push(argVal);
         }
-        return result;
+        return results;
     }
 
     public print_co_code(): void {
@@ -377,74 +334,29 @@ export class PyCodeObject extends PyComplex {
         if (this.consts) console.log("consts: " + this.consts.toString());
         if (this.freevars) console.log("freevars: " + this.freevars.toString());
         if (this.cellvars) console.log("cellvars: " + this.cellvars.toString());
-
         if (!this.code) throw new Error("this PyCodeObject doesnt have any code");
         if (!this.code.value) throw new Error("this PyCodeObjects code doesnt have a value");
-
-        console.log(this.code.value.readUInt8(0));
-
-
-
-
-//        console.log(typeof this.code.value);
-//        console.log(this.code.value.length);
-
-//        var buf = new ArrayBuffer(this.code.value.length);
-//        var view = new Int32Array(this.code.value);
-
-//        this.code.value.copy(buf);
-
-//        var dv = new DataView(buf);
-//        console.log(buf.length);
-//        if (!buf || buf.length == 0) throw new Error("no code to work with");
         for (var i = 0; i < this.code.value.length; i += 3) {
-//            if (!buf[i]) throw new Error("why does this suck");
-//            console.log("\t OPNAME: " + buf[i].toString(16) + " " + opcodes.Opcode[buf[i]]); //+ " -- " + opcodes.BetterOpcodes[opcodes.Opcode[buf[i]]]);
-
+            var op = this.code.value.readUInt8(i);
+            console.log("\topname: " + op.toString(16) + " " + opcodes.Opcode[op]);
+            if (op >= opcodes.HAVE_ARGUMENT) {
+                var nextBytes = this.code.value.slice(i+1, i+2);
+                var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+                if (this.contains(opcodes.hasArgInNames, op)) {
+                    console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
+                } else if (this.contains(opcodes.hasArgInConsts, op)) {
+                    console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                } else if (this.contains(opcodes.hasArgInLocals, op)) {
+                    console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
+                } else if (this.contains(opcodes.hasJrel, op)) {
+                    console.log("\t\targ: jrel arg = lasti + " + idx);
+                } else if (this.contains(opcodes.hasFree, op)) {
+                    console.log("\t\targ: hasFree --> NOT YET IMPLEMENTED"); //TODO
+                } else {
+                    console.log("\t\targ: jabs or compare");
+                }
+            }
         }
-
-//        if (buf) {
-//            var i = 0;
-//            while (i < buf.length) {
-//                if (!buf[i]) throw new Error("fuck this fucking entire world");
-//                console.log("\t OPNAME: " + buf[i].toString(16) + " " + opcodes.Opcode[buf[i]]); //+ " -- " + opcodes.BetterOpcodes[opcodes.Opcode[buf[i]]]);
-//
-//                console.log(buf[i]);
-//                var opc_name = opcodes.Opcode[buf[i]];
-//                i++;
-//
-////                if (i + 2 >= buf.length) break;
-////                if (!(opc_name in opcodes.OpsWithArgs) continue;//|| i + 2 >= buf.length) break;
-//
-//                var opc = opcodes.OpsWithArgs[opc_name];
-//                if (opc) {
-////                var idx = buf.readInt16LE(i);
-//                    var nextBytes = buf.slice(i, i + 2);
-//                    var idx = nextBytes[0] + (nextBytes[1] << 8);
-//                    i += 2;
-//
-//                    if (opc.args == "const") {
-//                        console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
-//                    } else if (opc.args == "locals") {
-//                        console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
-//                    } else if (opc.args == "names") {
-//                        console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
-//                    } else if (opc.args == "jrel") {
-//                        console.log("\t\targ: jrel arg = lasti + " + idx);
-//                    } else if (opc.args == "jabs") {
-//                        console.log("\t\targ: jabs arg = " + idx);
-//                    } else {
-//                        console.log("args don't match: " + opc.args);
-//                    }
-//                    //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-//                }
-//
-//            }
-//
-//
-//        } else throw new Error("this PyCodeObject's co_code is undefined");
-
-
     }
 }
 

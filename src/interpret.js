@@ -1,6 +1,6 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
-define(["require", "exports", "./py_objects", "./utils"], function(require, exports, pyo, utils) {
+define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(require, exports, pyo, utils, opcodes) {
     //TODO Block class
     //byterun: Block = collections.namedtuple("Block", "type, handler, level")
     var Block = (function () {
@@ -260,15 +260,16 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             this.push_frame(frame);
             while (true) {
                 var byteinfo = this.parse_byte_and_args();
-                if (byteinfo.length != 3)
-                    throw new Error(this.ERR + ": byteinfo.length != 3 -- " + byteinfo.toString());
+                if (byteinfo.length < 3)
+                    throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
                 console.log(INFO + " doing " + byteinfo.toString());
                 var byteName = byteinfo[0];
-                var args = byteinfo[1];
+                var byteCode = byteinfo[1];
                 var offset = byteinfo[2];
-                if (args && args.length == 0)
-                    args = undefined;
-                var why = this.dispatch(byteName, args);
+                var arg;
+                if (byteinfo.length > 3)
+                    arg = byteinfo[3];
+                var why = this.dispatch(byteName, byteCode, arg);
                 if (why == "exception")
                     console.log(INFO + " why == exception (TODO)");
                 if (why == "reraise")
@@ -280,42 +281,60 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
                 if (why)
                     break;
             }
+
             this.pop_frame();
 
             //TODO handle exceptions
             return this.returnval;
         };
 
+        VirtualMachine.prototype.dispatch = function (byteName, byteCode, arg) {
+            var INFO = this.TAG + " run_frame: ";
+            var why;
+            if (byteName.search(/UNARY_/) == 0)
+                this.unaryOperator(byteName.slice(6, byteName.length));
+            else if (byteName.search(/BINARY_/) == 0)
+                this.binaryOperator(byteName.slice(7, byteName.length));
+            else if (byteName.search(/INPLACE_/) == 0)
+                this.inplaceOperator(byteName.slice(8, byteName.length));
+            else if (byteName.search(/SLICE/) != -1)
+                this.sliceOperator(byteName);
+            else
+                why = this.getOp(byteCode, arg);
+
+            //        else {
+            //            why = this.getOp(byteName, args);
+            ////            var bytecode_fn = this.getOp(byteName);
+            ////            if (!bytecode_fn) throw new Error(this.ERR);
+            ////            why = bytecode_fn(args);
+            //        }
+            return why;
+        };
+
         /**
         *
-        * @returns {Array} = [opcode_name, args, offset]
+        * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
         */
         VirtualMachine.prototype.parse_byte_and_args = function () {
             var result = [];
             var f = this.frame;
             var offset = f.lasti;
-            var byteInfo = f.frame_code_object.get_byteinfo_at(offset);
-            if (byteInfo.length == 0)
-                throw new Error(this.ERR);
             f.lasti++;
+            var byteInfo = f.frame_code_object.get_byteinfo_at(offset, f.lasti);
+            if (byteInfo.length < 2)
+                throw new Error(this.ERR);
             var byteName = byteInfo[0];
+            var byteCode = byteInfo[1];
             result.push(byteName);
+            result.push(byteCode);
+            result.push(offset);
             var arg;
-            if (byteInfo.length >= 1) {
-                arg = byteInfo[1];
+            if (byteInfo.length >= 3) {
+                arg = byteInfo[2];
                 result.push(arg);
                 f.lasti += 2;
-            } else
-                result.push("");
-            result.push(offset);
+            }
 
-            //        console.log("opname="+byteName+", arg="+arg+", offset="+offset);
-            //        var s = this.TAG + " parse_byte_and_args(): ";
-            //        if (result.length == 3) console.log(s + " " + result.toString());
-            //        else {
-            //            console.log(s + " result len=" + result.length + " " + result.toString());
-            //            throw new Error(this.ERR);
-            //        }
             return result;
         };
 
@@ -370,27 +389,6 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
                 var exceptionType = this.pop();
                 this.last_exception = [exceptionType, value, tb];
             }
-        };
-
-        VirtualMachine.prototype.dispatch = function (byteName, args) {
-            var INFO = this.TAG + " run_frame: ";
-            var why;
-            var unaryOp, binaryOp, inplaceOp, sliceOp;
-            if (byteName.search(/UNARY_/) == 0)
-                this.unaryOperator(byteName.slice(6, byteName.length));
-            else if (byteName.search(/BINARY_/) == 0)
-                this.binaryOperator(byteName.slice(7, byteName.length));
-            else if (byteName.search(/INPLACE_/) == 0)
-                this.inplaceOperator(byteName.slice(8, byteName.length));
-            else if (byteName.search(/SLICE/) != -1)
-                this.sliceOperator(byteName);
-            else {
-                why = this.getOp(byteName, args);
-                //            var bytecode_fn = this.getOp(byteName);
-                //            if (!bytecode_fn) throw new Error(this.ERR);
-                //            why = bytecode_fn(args);
-            }
-            return why;
         };
 
         VirtualMachine.prototype.unaryOperator = function (op) {
@@ -456,29 +454,51 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
                 this.push(l.slice(start, end));
         };
 
-        VirtualMachine.prototype.getOp = function (op, args) {
-            if (op == "LOAD_CONST")
-                this.LOAD_CONST(args);
-            if (op == "STORE_NAME")
-                this.STORE_NAME(args);
-            if (op == "LOAD_NAME")
-                this.LOAD_NAME(args);
-            if (op == "POP_TOP") {
-                console.log("\tPOP_TOP");
-                this.pop();
+        VirtualMachine.prototype.getOp = function (opcode, arg) {
+            var result;
+            switch (opcode) {
+                case 100 /* LOAD_CONST */:
+                    this.LOAD_CONST(arg);
+                    break;
+                case 90 /* STORE_NAME */:
+                    this.STORE_NAME(arg);
+                    break;
+                case 101 /* LOAD_NAME */:
+                    this.LOAD_NAME(arg);
+                    break;
+                case 1 /* POP_TOP */:
+                    this.pop();
+                    break;
+                case 2 /* ROT_TWO */:
+                    this.ROT_TWO();
+                    break;
+                case 132 /* MAKE_FUNCTION */:
+                    this.MAKE_FUNCTION(arg);
+                    break;
+                case 83 /* RETURN_VALUE */:
+                    result = this.RETURN_VALUE();
+                    break;
+                case 107 /* COMPARE_OP */:
+                    this.COMPARE_OP(arg);
+                    break;
+                default:
+                    throw new Error("unknown opcode: " + opcode);
             }
-            if (op == "ROT_TWO")
-                this.ROT_TWO();
-            if (op == "MAKE_FUNCTION")
-                this.MAKE_FUNCTION(args);
-            if (op == "RETURN_VALUE")
-                return this.RETURN_VALUE();
+
+            //        if (op == "LOAD_CONST") this.LOAD_CONST(args);
+            //        if (op == "STORE_NAME") this.STORE_NAME(args);
+            //        if (op == "LOAD_NAME") this.LOAD_NAME(args);
+            //        if (op == "POP_TOP") { console.log("\tPOP_TOP"); this.pop(); }
+            //        if (op == "ROT_TWO") this.ROT_TWO();
+            //        if (op == "MAKE_FUNCTION") this.MAKE_FUNCTION(args);
+            //        if (op == "RETURN_VALUE") return this.RETURN_VALUE();
+            //        if (op == "")
             return undefined;
         };
 
-        VirtualMachine.prototype.LOAD_CONST = function (c) {
-            console.log("\tLOAD_CONST " + c.toString());
-            this.push(c);
+        VirtualMachine.prototype.LOAD_CONST = function (constant) {
+            console.log("\tLOAD_CONST " + constant.toString());
+            this.push(constant);
         };
 
         VirtualMachine.prototype.STORE_NAME = function (n) {
@@ -545,6 +565,38 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
         };
 
         VirtualMachine.prototype.STORE_MAP = function () {
+        };
+
+        VirtualMachine.prototype.COMPARE_OP = function (arg) {
+            var x = this.pop();
+            var y = this.pop();
+            var result;
+            switch (arg) {
+                case 0:
+                    result = x < y;
+                    break;
+                case 1:
+                    result = x <= y;
+                    break;
+                case 2:
+                    result = x == y;
+                    break;
+                case 3:
+                    result = x != y;
+                    break;
+                case 4:
+                    result = x > y;
+                    break;
+                case 5:
+                    result = x >= y;
+                    break;
+                default:
+                    break;
+            }
+            console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
+
+            //        var result = COMPARE_OPS[arg](x, y);
+            this.push(result);
         };
         return VirtualMachine;
     })();

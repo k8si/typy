@@ -231,11 +231,14 @@ export class VirtualMachine {
         this.push_frame(frame);
         while (true) {
             var byteinfo = this.parse_byte_and_args();
-            if (byteinfo.length != 3) throw new Error(this.ERR + ": byteinfo.length != 3 -- " + byteinfo.toString());
+            if (byteinfo.length < 3) throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
             console.log(INFO + " doing " + byteinfo.toString());
-            var byteName = byteinfo[0]; var args = byteinfo[1]; var offset = byteinfo[2];
-            if (args && args.length == 0) args = undefined;
-            var why = this.dispatch(byteName, args);
+            var byteName = byteinfo[0];
+            var byteCode = byteinfo[1];
+            var offset = byteinfo[2];
+            var arg;
+            if (byteinfo.length > 3) arg = byteinfo[3];
+            var why = this.dispatch(byteName, byteCode, arg);
             if (why == "exception") console.log(INFO + " why == exception (TODO)");
             if (why == "reraise") why = "exception";
             if (why != "yield") {
@@ -244,38 +247,54 @@ export class VirtualMachine {
             }
             if (why) break;
         }
+
         this.pop_frame();
         //TODO handle exceptions
         return this.returnval;
     }
 
+
+    private dispatch(byteName:string, byteCode:number, arg?:any): any {
+        var INFO = this.TAG + " run_frame: ";
+        var why;
+        if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
+        else if (byteName.search(/BINARY_/) == 0) this.binaryOperator(byteName.slice(7, byteName.length));
+        else if (byteName.search(/INPLACE_/) == 0) this.inplaceOperator(byteName.slice(8, byteName.length));
+        else if (byteName.search(/SLICE/) != -1) this.sliceOperator(byteName);
+        else why = this.getOp(byteCode, arg);
+
+
+//        else {
+//            why = this.getOp(byteName, args);
+////            var bytecode_fn = this.getOp(byteName);
+////            if (!bytecode_fn) throw new Error(this.ERR);
+////            why = bytecode_fn(args);
+//        }
+        return why;
+    }
+
     /**
      *
-     * @returns {Array} = [opcode_name, args, offset]
+     * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
      */
     private parse_byte_and_args(): any[] {
         var result = [];
         var f = this.frame;
         var offset = f.lasti;
-        var byteInfo = f.frame_code_object.get_byteinfo_at(offset);
-        if (byteInfo.length == 0) throw new Error(this.ERR);
         f.lasti++;
+        var byteInfo = f.frame_code_object.get_byteinfo_at(offset, f.lasti);
+        if (byteInfo.length < 2) throw new Error(this.ERR);
         var byteName = byteInfo[0];
+        var byteCode = byteInfo[1];
         result.push(byteName);
-        var arg;
-        if (byteInfo.length >= 1) {
-            arg = byteInfo[1]; result.push(arg);
-            f.lasti += 2;
-        } else result.push("");
+        result.push(byteCode);
         result.push(offset);
-
-//        console.log("opname="+byteName+", arg="+arg+", offset="+offset);
-//        var s = this.TAG + " parse_byte_and_args(): ";
-//        if (result.length == 3) console.log(s + " " + result.toString());
-//        else {
-//            console.log(s + " result len=" + result.length + " " + result.toString());
-//            throw new Error(this.ERR);
-//        }
+        var arg;
+        if (byteInfo.length >= 3) {
+            arg = byteInfo[2];
+            result.push(arg);
+            f.lasti += 2;
+        }
 
         return result;
     }
@@ -326,22 +345,6 @@ export class VirtualMachine {
         }
     }
 
-    private dispatch(byteName:string, args:any): any {
-        var INFO = this.TAG + " run_frame: ";
-        var why;
-        var unaryOp, binaryOp, inplaceOp, sliceOp;
-        if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
-        else if (byteName.search(/BINARY_/) == 0) this.binaryOperator(byteName.slice(7, byteName.length));
-        else if (byteName.search(/INPLACE_/) == 0) this.inplaceOperator(byteName.slice(8, byteName.length));
-        else if (byteName.search(/SLICE/) != -1) this.sliceOperator(byteName);
-        else {
-            why = this.getOp(byteName, args);
-//            var bytecode_fn = this.getOp(byteName);
-//            if (!bytecode_fn) throw new Error(this.ERR);
-//            why = bytecode_fn(args);
-        }
-        return why;
-    }
 
     private unaryOperator(op:string): void {
         var x = this.pop();
@@ -399,18 +402,26 @@ export class VirtualMachine {
         } else this.push(l.slice(start, end));
     }
 
-    private getOp(op:string, args?:any): any {
-        if (op == "LOAD_CONST") this.LOAD_CONST(args);
-        if (op == "STORE_NAME") this.STORE_NAME(args);
-        if (op == "LOAD_NAME") this.LOAD_NAME(args);
-        if (op == "POP_TOP") { console.log("\tPOP_TOP"); this.pop(); }
-        if (op == "ROT_TWO") this.ROT_TWO();
-        if (op == "MAKE_FUNCTION") this.MAKE_FUNCTION(args);
-        if (op == "RETURN_VALUE") return this.RETURN_VALUE();
+    private getOp(opcode:number, arg?:any): any {
+        var result;
+        switch (opcode) {
+            case opcodes.Opcode.LOAD_CONST: this.LOAD_CONST(arg); break;
+            case opcodes.Opcode.STORE_NAME: this.STORE_NAME(arg); break;
+            case opcodes.Opcode.LOAD_NAME: this.LOAD_NAME(arg); break;
+            case opcodes.Opcode.POP_TOP: this.pop(); break;
+            case opcodes.Opcode.ROT_TWO: this.ROT_TWO(); break;
+            case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
+            case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
+            case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
+            default: throw new Error("unknown opcode: " + opcode);
+        }
         return undefined;
     }
 
-    private LOAD_CONST(c:any): void { console.log("\tLOAD_CONST " + c.toString()); this.push(c); }
+    private LOAD_CONST(constant:any): void {
+        console.log("\tLOAD_CONST " + constant.toString());
+        this.push(constant);
+    }
 
     private STORE_NAME(n:pyo.PyInterned): void {
         console.log("\tSTORE_NAME " + n.toString());
@@ -473,5 +484,25 @@ export class VirtualMachine {
 
     private STORE_MAP(): void {
 
+    }
+
+    private COMPARE_OP(arg:any): void {
+        var x = this.pop();
+        var y = this.pop();
+        var result;
+        switch (arg) {
+            case 0: result = x < y; break;
+            case 1: result = x <= y; break;
+            case 2: result = x == y; break;
+            case 3: result = x != y; break;
+            case 4: result = x > y; break;
+            case 5: result = x >= y; break;
+            default: break;
+            //TODO case 6: x IS y; case 7: x IS NOT y; default: goto slow_compare
+        }
+        console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
+
+//        var result = COMPARE_OPS[arg](x, y);
+        this.push(result);
     }
 }
