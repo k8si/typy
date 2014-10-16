@@ -88,7 +88,9 @@ export var BINARY_OPS = {
     POWER: Math.pow,
     ADD: function(x, y){ return x + y; },
     //TODO rest
-    SUBTRACT: function(x, y){ return x - y; }
+    SUBTRACT: function(x, y){ return x - y; },
+    MULTIPLY: function(x,y){ return x * y; },
+    DIVIDE: function(x,y){return x / y ;}
     //...
 };
 

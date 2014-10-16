@@ -61,7 +61,9 @@ export enum Opcode {
     ROT_TWO = 0x02,
     ROT_THREE = 0x03, //0x03 => [:ROT_THREE, nil],
     DUP_TOP = 0x04,    //	0x04 => [:DUP_TOP, nil],
+    ROT_FOUR = 0x05,
     UNARY_POSITIVE = 0x0A,
+    UNARY_NEGATIVE = 0x0B,
 
     BINARY_ADD = 0x17,
     BINARY_DIVIDE = 0x15, //	0x15 => [:BINARY_DIVIDE, nil],
