@@ -1,9 +1,13 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
-define(["require", "exports", "./py_objects", "./utils"], function(require, exports, pyo, utils) {
+define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(require, exports, pyo, utils, opcodes) {
     //TODO Block class
+    //byterun: Block = collections.namedtuple("Block", "type, handler, level")
     var Block = (function () {
-        function Block() {
+        function Block(type, handler, level) {
+            this.type = type;
+            this.handler = handler;
+            this.level = level;
         }
         return Block;
     })();
@@ -98,6 +102,12 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
         //TODO rest
         SUBTRACT: function (x, y) {
             return x - y;
+        },
+        MULTIPLY: function (x, y) {
+            return x * y;
+        },
+        DIVIDE: function (x, y) {
+            return x / y;
         }
     };
 
@@ -128,7 +138,7 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             }
             this.block_stack = [];
             this.stack = [];
-            this.generator = new pyo.PyNone(-1);
+            this.generator = new pyo.PyNone();
         }
         Frame.prototype.toString = function () {
             return "<Frame " + this.frame_code_object.filename + " " + this.lineno;
@@ -192,11 +202,10 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             //       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
         };
 
-        VirtualMachine.prototype.popBlock = function () {
+        VirtualMachine.prototype.pop_block = function () {
             return this.frame.block_stack.pop();
         };
 
-        //TODO pop_block()
         VirtualMachine.prototype.make_frame = function (code, callargs, globals, locals) {
             if (typeof callargs === "undefined") { callargs = new utils.Dict(); }
             console.log("make frame: " + code.toString());
@@ -251,81 +260,37 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             this.push_frame(frame);
             while (true) {
                 var byteinfo = this.parse_byte_and_args();
-                if (byteinfo.length != 3)
-                    throw new Error(this.ERR + ": byteinfo.length != 3 -- " + byteinfo.toString());
+                if (byteinfo.length < 3)
+                    throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
                 console.log(INFO + " doing " + byteinfo.toString());
                 var byteName = byteinfo[0];
-                var args = byteinfo[1];
+                var byteCode = byteinfo[1];
                 var offset = byteinfo[2];
-                if (args && args.length == 0)
-                    args = undefined;
-                var why = this.dispatch(byteName, args);
-
-                //TODO if why == 'exception', reraise
-                //            if (why != "yield") {
-                //                while(why && frame.block_stack) {
-                //                    why = this.manage_block_stack(why);
-                //                }
-                //            }
+                var arg;
+                if (byteinfo.length > 3)
+                    arg = byteinfo[3];
+                var why = this.dispatch(byteName, byteCode, arg);
+                if (why == "exception")
+                    console.log(INFO + " why == exception (TODO)");
+                if (why == "reraise")
+                    why = "exception";
+                if (why != "yield") {
+                    while (why && frame.block_stack.length > 0)
+                        why = this.manage_block_stack(why);
+                }
                 if (why)
                     break;
             }
+
             this.pop_frame();
 
             //TODO handle exceptions
             return this.returnval;
         };
 
-        /**
-        *
-        * @returns {Array} = [opcode_name, args, offset]
-        */
-        VirtualMachine.prototype.parse_byte_and_args = function () {
-            var result = [];
-            var f = this.frame;
-            var offset = f.lasti;
-            var byteInfo = f.frame_code_object.get_byteinfo_at(offset);
-            if (byteInfo.length == 0)
-                throw new Error(this.ERR);
-            f.lasti++;
-            var byteName = byteInfo[0];
-            result.push(byteName);
-            var arg;
-            if (byteInfo.length >= 1) {
-                arg = byteInfo[1];
-                result.push(arg);
-                f.lasti += 2;
-            } else
-                result.push("");
-            result.push(offset);
-
-            //        console.log("opname="+byteName+", arg="+arg+", offset="+offset);
-            //        var s = this.TAG + " parse_byte_and_args(): ";
-            //        if (result.length == 3) console.log(s + " " + result.toString());
-            //        else {
-            //            console.log(s + " result len=" + result.length + " " + result.toString());
-            //            throw new Error(this.ERR);
-            //        }
-            return result;
-        };
-
-        //TODO
-        VirtualMachine.prototype.manage_block_stack = function (why) {
-            return undefined;
-            //        if (why == "yield") throw new Error(this.ERR);
-            //        var block = this.frame.block_stack[this.frame.block_stack.length-1];
-            //        //TODO if block.type == loop ....
-            //        this.popBlock();
-            //        //TODO this.unwind_block(block)
-            //        //TODO everything else...
-            //        why = "yield";
-            //        return why;
-        };
-
-        VirtualMachine.prototype.dispatch = function (byteName, args) {
+        VirtualMachine.prototype.dispatch = function (byteName, byteCode, arg) {
             var INFO = this.TAG + " run_frame: ";
             var why;
-            var unaryOp, binaryOp, inplaceOp, sliceOp;
             if (byteName.search(/UNARY_/) == 0)
                 this.unaryOperator(byteName.slice(6, byteName.length));
             else if (byteName.search(/BINARY_/) == 0)
@@ -334,13 +299,96 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
                 this.inplaceOperator(byteName.slice(8, byteName.length));
             else if (byteName.search(/SLICE/) != -1)
                 this.sliceOperator(byteName);
-            else {
-                why = this.getOp(byteName, args);
-                //            var bytecode_fn = this.getOp(byteName);
-                //            if (!bytecode_fn) throw new Error(this.ERR);
-                //            why = bytecode_fn(args);
-            }
+            else
+                why = this.getOp(byteCode, arg);
+
+            //        else {
+            //            why = this.getOp(byteName, args);
+            ////            var bytecode_fn = this.getOp(byteName);
+            ////            if (!bytecode_fn) throw new Error(this.ERR);
+            ////            why = bytecode_fn(args);
+            //        }
             return why;
+        };
+
+        /**
+        *
+        * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
+        */
+        VirtualMachine.prototype.parse_byte_and_args = function () {
+            var result = [];
+            var f = this.frame;
+            var offset = f.lasti;
+            f.lasti++;
+            var byteInfo = f.frame_code_object.get_byteinfo_at(offset, f.lasti);
+            if (byteInfo.length < 2)
+                throw new Error(this.ERR);
+            var byteName = byteInfo[0];
+            var byteCode = byteInfo[1];
+            result.push(byteName);
+            result.push(byteCode);
+            result.push(offset);
+            var arg;
+            if (byteInfo.length >= 3) {
+                arg = byteInfo[2];
+                result.push(arg);
+                f.lasti += 2;
+            }
+
+            return result;
+        };
+
+        /*** for looping, handling exceptions, returning **/
+        VirtualMachine.prototype.manage_block_stack = function (why) {
+            var TAG = "manage_block_stack(why=" + why + ")";
+            if (why == "yield")
+                throw new Error(this.ERR + " " + TAG);
+            var block = this.frame.block_stack[this.frame.block_stack.length - 1];
+            var whyResult = why;
+            if (block.type == "loop" && why == "continue") {
+                this.jump(this.returnval);
+                whyResult = undefined;
+                return whyResult;
+            }
+            this.pop_block();
+            this.unwind_block(block);
+            if (block.type == "loop" && why == "break") {
+                whyResult = undefined;
+                this.jump(block.handler);
+                return whyResult;
+            }
+            if (block.type = "finally" || (block.type == "setup-except" && why == "exception") || block.type == "with") {
+                if (why == "exception") {
+                    var etype = this.last_exception[0], value = this.last_exception[1], tb = this.last_exception[2];
+                    this.push(tb);
+                    this.push(value);
+                    this.push(etype);
+                } else {
+                    if (why == "return" || why == "continue")
+                        this.push(this.returnval);
+                    this.push(why);
+                }
+                whyResult = undefined;
+                this.jump(block.handler);
+                return whyResult;
+            }
+            return whyResult;
+        };
+
+        VirtualMachine.prototype.unwind_block = function (block) {
+            var offset;
+            if (block.type == "except-handler")
+                offset = 3;
+            else
+                offset = 0;
+            while (this.frame.stack.length > block.level + offset)
+                this.pop();
+            if (block.type == "except-handler") {
+                var tb = this.pop();
+                var value = this.pop();
+                var exceptionType = this.pop();
+                this.last_exception = [exceptionType, value, tb];
+            }
         };
 
         VirtualMachine.prototype.unaryOperator = function (op) {
@@ -406,29 +454,42 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
                 this.push(l.slice(start, end));
         };
 
-        VirtualMachine.prototype.getOp = function (op, args) {
-            if (op == "LOAD_CONST")
-                this.LOAD_CONST(args);
-            if (op == "STORE_NAME")
-                this.STORE_NAME(args);
-            if (op == "LOAD_NAME")
-                this.LOAD_NAME(args);
-            if (op == "POP_TOP") {
-                console.log("\tPOP_TOP");
-                this.pop();
+        VirtualMachine.prototype.getOp = function (opcode, arg) {
+            var result;
+            switch (opcode) {
+                case 100 /* LOAD_CONST */:
+                    this.LOAD_CONST(arg);
+                    break;
+                case 90 /* STORE_NAME */:
+                    this.STORE_NAME(arg);
+                    break;
+                case 101 /* LOAD_NAME */:
+                    this.LOAD_NAME(arg);
+                    break;
+                case 1 /* POP_TOP */:
+                    this.pop();
+                    break;
+                case 2 /* ROT_TWO */:
+                    this.ROT_TWO();
+                    break;
+                case 132 /* MAKE_FUNCTION */:
+                    this.MAKE_FUNCTION(arg);
+                    break;
+                case 83 /* RETURN_VALUE */:
+                    result = this.RETURN_VALUE();
+                    break;
+                case 107 /* COMPARE_OP */:
+                    this.COMPARE_OP(arg);
+                    break;
+                default:
+                    throw new Error("unknown opcode: " + opcode);
             }
-            if (op == "ROT_TWO")
-                this.ROT_TWO();
-            if (op == "MAKE_FUNCTION")
-                this.MAKE_FUNCTION(args);
-            if (op == "RETURN_VALUE")
-                return this.RETURN_VALUE();
             return undefined;
         };
 
-        VirtualMachine.prototype.LOAD_CONST = function (c) {
-            console.log("\tLOAD_CONST " + c.toString());
-            this.push(c);
+        VirtualMachine.prototype.LOAD_CONST = function (constant) {
+            console.log("\tLOAD_CONST " + constant.toString());
+            this.push(constant);
         };
 
         VirtualMachine.prototype.STORE_NAME = function (n) {
@@ -459,6 +520,20 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             this.push(a);
         };
 
+        VirtualMachine.prototype.ROT_THREE = function () {
+            console.log("\tROT_THREE");
+            var a = this.pop();
+            var b = this.pop();
+            var c = this.pop();
+            this.push(c);
+            this.push(b);
+            this.push(a);
+        };
+
+        VirtualMachine.prototype.DUP_TOP = function () {
+            this.push(this.top());
+        };
+
         VirtualMachine.prototype.RETURN_VALUE = function () {
             this.returnval = this.pop();
             console.log("\tRETURN_VALUE " + this.returnval.toString());
@@ -480,7 +555,36 @@ define(["require", "exports", "./py_objects", "./utils"], function(require, expo
             this.push(fn);
         };
 
-        VirtualMachine.prototype.STORE_MAP = function () {
+        VirtualMachine.prototype.COMPARE_OP = function (arg) {
+            var x = this.pop();
+            var y = this.pop();
+            var result;
+            switch (arg) {
+                case 0:
+                    result = x < y;
+                    break;
+                case 1:
+                    result = x <= y;
+                    break;
+                case 2:
+                    result = x == y;
+                    break;
+                case 3:
+                    result = x != y;
+                    break;
+                case 4:
+                    result = x > y;
+                    break;
+                case 5:
+                    result = x >= y;
+                    break;
+                default:
+                    break;
+            }
+            console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
+
+            //        var result = COMPARE_OPS[arg](x, y);
+            this.push(result);
         };
         return VirtualMachine;
     })();

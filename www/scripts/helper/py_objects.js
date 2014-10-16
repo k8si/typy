@@ -1,236 +1,208 @@
-/**
-* Created by kate on 9/28/14.
-*/
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
+/// <reference path="../lib/node/node.d.ts" />
+/// <reference path="../typings/long/long.d.ts" />
 define(["require", "exports", "./opcodes"], function(require, exports, opcodes) {
-    var PyObject = (function () {
-        function PyObject() {
-        }
-        return PyObject;
-    })();
-    exports.PyObject = PyObject;
-
-    // abstract wrapper class "simple" Python types which contain no data
-    var PyPrimitive = (function (_super) {
-        __extends(PyPrimitive, _super);
-        function PyPrimitive(offset, type) {
-            _super.call(this);
-            this.offset = offset;
-            this.type = type;
-        }
-        return PyPrimitive;
-    })(PyObject);
-    exports.PyPrimitive = PyPrimitive;
-
-    var PyNull = (function (_super) {
-        __extends(PyNull, _super);
-        function PyNull(offset) {
-            _super.call(this, offset, "null");
+    //export class PyObject {
+    //    public value: any; //guarantees that all things that inherit have a defined value field
+    //    public type: string;
+    //    constructor(value: any, type: string){
+    //        this.value = value;
+    //        this.type = type;
+    //    }
+    //    public toString(): string { return "<py-"+this.type+" value=" + this.value + ">"; }
+    //    public eq<T extends PyObject>(other: T): boolean { return other.type == this.type; }
+    //}
+    var PyNull = (function () {
+        function PyNull() {
             this.value = null;
+            this.type = "null";
         }
         PyNull.prototype.toString = function () {
             return "< PyNull >";
         };
         return PyNull;
-    })(PyPrimitive);
+    })();
     exports.PyNull = PyNull;
 
-    var PyNone = (function (_super) {
-        __extends(PyNone, _super);
-        function PyNone(offset) {
-            _super.call(this, offset, "none");
+    var PyNone = (function () {
+        function PyNone() {
             this.value = undefined;
+            this.type = "none";
         }
         PyNone.prototype.toString = function () {
             return "< PyNone >";
         };
         return PyNone;
-    })(PyPrimitive);
+    })();
     exports.PyNone = PyNone;
 
-    var PyStopIter = (function (_super) {
-        __extends(PyStopIter, _super);
-        function PyStopIter(offset) {
-            _super.call(this, offset, "stopiter");
+    var PyStopIter = (function () {
+        function PyStopIter() {
+            this.value = "stopiter";
+            this.type = "stopiter";
         }
         PyStopIter.prototype.toString = function () {
             return "< PyStopIter >";
         };
         return PyStopIter;
-    })(PyPrimitive);
+    })();
     exports.PyStopIter = PyStopIter;
 
-    var PyEllipsis = (function (_super) {
-        __extends(PyEllipsis, _super);
-        function PyEllipsis(offset) {
-            _super.call(this, offset, "ellipsis");
+    var PyEllipsis = (function () {
+        function PyEllipsis() {
+            this.value = "...";
+            this.type = "ellipsis";
         }
         PyEllipsis.prototype.toString = function () {
             return "< PyEllipsis >";
         };
         return PyEllipsis;
-    })(PyPrimitive);
+    })();
     exports.PyEllipsis = PyEllipsis;
 
-    var PyTrue = (function (_super) {
-        __extends(PyTrue, _super);
-        function PyTrue(offset) {
-            _super.call(this, offset, "true");
+    var PyTrue = (function () {
+        function PyTrue() {
             this.value = true;
+            this.type = "true";
         }
         PyTrue.prototype.toString = function () {
             return "< PyTrue >";
         };
         return PyTrue;
-    })(PyPrimitive);
+    })();
     exports.PyTrue = PyTrue;
 
-    var PyFalse = (function (_super) {
-        __extends(PyFalse, _super);
-        function PyFalse(offset) {
-            _super.call(this, offset, "false");
+    var PyFalse = (function () {
+        function PyFalse() {
             this.value = false;
+            this.type = "false";
         }
         PyFalse.prototype.toString = function () {
             return "< PyFalse >";
         };
         return PyFalse;
-    })(PyPrimitive);
+    })();
     exports.PyFalse = PyFalse;
 
-    // abstract wrapper class for "complex" Python types which contain data
-    var PyComplex = (function (_super) {
-        __extends(PyComplex, _super);
-        function PyComplex(offset, type) {
-            _super.call(this);
-            this.offset = offset;
-            this.type = type;
-        }
-        return PyComplex;
-    })(PyObject);
-    exports.PyComplex = PyComplex;
-
-    var PyInt = (function (_super) {
-        __extends(PyInt, _super);
-        function PyInt(offset, value) {
-            _super.call(this, offset, "int");
+    //// abstract wrapper class for "complex" Python types which contain data
+    //export class PyComplex extends PyObject {
+    //    offset:number;
+    //    type:string;
+    //    constructor(offset:number, type:string){
+    //        super(1, "");
+    //        this.offset = offset;
+    //        this.type = type;
+    //    }
+    //}
+    var PyInt = (function () {
+        function PyInt(value) {
+            this.type = "int";
             this.value = value;
         }
         PyInt.prototype.toString = function () {
             return "<PyInt " + this.value.toString() + ">";
         };
         return PyInt;
-    })(PyComplex);
+    })();
     exports.PyInt = PyInt;
 
     /**
     * TODO not sure if value should be type Long?
     */
-    var PyInt64 = (function (_super) {
-        __extends(PyInt64, _super);
-        function PyInt64(offset, value) {
-            _super.call(this, offset, "int64");
+    var PyInt64 = (function () {
+        function PyInt64(value) {
+            this.type = "int64";
             this.value = value;
         }
         PyInt64.prototype.toString = function () {
             return "<PyInt64 " + this.value.toString() + ">";
         };
         return PyInt64;
-    })(PyComplex);
+    })();
     exports.PyInt64 = PyInt64;
 
     /**
     * TODO PyLong.value should be specified as type "Long" (or LongStatic?) however I get a compiler error:
     * /Users/kate/630/630-proj1/src/py_objects.ts(93,38): error TS4022: Type reference cannot refer to container 'Long'.
     */
-    var PyLong = (function (_super) {
-        __extends(PyLong, _super);
-        function PyLong(offset, value) {
-            _super.call(this, offset, "long");
+    var PyLong = (function () {
+        function PyLong(value) {
+            this.type = "long";
             this.value = value;
         }
         PyLong.prototype.toString = function () {
             return "<PyLong " + this.value.toString() + ">";
         };
         return PyLong;
-    })(PyComplex);
+    })();
     exports.PyLong = PyLong;
 
-    var PyFloat = (function (_super) {
-        __extends(PyFloat, _super);
-        function PyFloat(offset, value) {
-            _super.call(this, offset, "float");
+    var PyFloat = (function () {
+        function PyFloat(value) {
+            this.type = "float";
             this.value = value;
         }
         PyFloat.prototype.toString = function () {
             return "<PyFloat " + this.value.toString() + ">";
         };
         return PyFloat;
-    })(PyComplex);
+    })();
     exports.PyFloat = PyFloat;
 
-    //TODO value should be string instead of Buffer?
-    var PyString = (function (_super) {
-        __extends(PyString, _super);
-        function PyString(offset, value) {
-            _super.call(this, offset, "string");
-            this.value = value;
+    var PyString = (function () {
+        function PyString(value) {
+            this.type = "string";
+            this.value = value.toString();
         }
+        PyString.prototype.toBuffer = function () {
+            return new Buffer(this.value);
+        };
         PyString.prototype.toString = function () {
             return "<PyString '" + this.value.toString() + "'>";
         };
         return PyString;
-    })(PyComplex);
+    })();
     exports.PyString = PyString;
 
-    var PyInterned = (function (_super) {
-        __extends(PyInterned, _super);
-        function PyInterned(offset, value) {
-            _super.call(this, offset, "interned");
-            this.value = value;
+    var PyInterned = (function () {
+        function PyInterned(value) {
+            this.type = "interned-string";
+            //        super(offset, "interned");
+            this.value = value.toString();
         }
         PyInterned.prototype.toString = function () {
             return "<PyInterned '" + this.value.toString() + "'>";
         };
         return PyInterned;
-    })(PyComplex);
+    })();
     exports.PyInterned = PyInterned;
 
-    var PyStringRef = (function (_super) {
-        __extends(PyStringRef, _super);
-        function PyStringRef(offset, value) {
-            _super.call(this, offset, "stringref");
-            this.value = value;
+    var PyStringRef = (function () {
+        function PyStringRef(value) {
+            this.type = "string-ref";
+            this.value = value.toString();
         }
         PyStringRef.prototype.toString = function () {
             return "<PyStringRef '" + this.value.toString() + "'>";
         };
         return PyStringRef;
-    })(PyComplex);
+    })();
     exports.PyStringRef = PyStringRef;
 
-    var PyUnicode = (function (_super) {
-        __extends(PyUnicode, _super);
-        function PyUnicode(offset, value) {
-            _super.call(this, offset, "unicode");
+    var PyUnicode = (function () {
+        function PyUnicode(value) {
+            this.type = "unicode";
             this.value = value;
         }
         PyUnicode.prototype.toString = function () {
             return "<PyUnicode '" + this.value + "'>";
         };
         return PyUnicode;
-    })(PyComplex);
+    })();
     exports.PyUnicode = PyUnicode;
 
-    var PyTuple = (function (_super) {
-        __extends(PyTuple, _super);
-        function PyTuple(offset, value) {
-            _super.call(this, offset, "tuple");
+    var PyTuple = (function () {
+        function PyTuple(value) {
+            this.type = "tuple";
             this.value = value;
         }
         PyTuple.prototype.toString = function () {
@@ -262,46 +234,39 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
                 return null;
         };
         return PyTuple;
-    })(PyComplex);
+    })();
     exports.PyTuple = PyTuple;
 
-    var PyList = (function (_super) {
-        __extends(PyList, _super);
-        function PyList(offset, value) {
-            _super.call(this, offset, "list");
-            this.value = value;
-        }
-        return PyList;
-    })(PyComplex);
-    exports.PyList = PyList;
-
-    var PyDict = (function (_super) {
-        __extends(PyDict, _super);
-        function PyDict(offset, value) {
-            _super.call(this, offset, "dict");
-            this.value = value;
-        }
-        PyDict.prototype.toString = function () {
-            return "< PyDict with " + this.value.size() + " items >";
-        };
-        return PyDict;
-    })(PyComplex);
-    exports.PyDict = PyDict;
-
-    var PyFrozenSet = (function (_super) {
-        __extends(PyFrozenSet, _super);
-        function PyFrozenSet(offset, value) {
-            _super.call(this, offset, "set");
-            this.value = value;
-        }
-        return PyFrozenSet;
-    })(PyComplex);
-    exports.PyFrozenSet = PyFrozenSet;
-
-    var PyCodeObject = (function (_super) {
-        __extends(PyCodeObject, _super);
+    //export class PyList extends PyComplex {
+    //    value:any[];
+    //    constructor(offset:number, value:any[]){
+    //        super(offset, "list");
+    //        this.value = value;
+    //    }
+    //
+    //}
+    //
+    //export class PyDict extends PyComplex {
+    //    value: utils.Dict<any>;
+    //    constructor(offset:number, value: utils.Dict<any>) {
+    //        super(offset, "dict");
+    //        this.value = value;
+    //    }
+    //    public toString(): string { return "< PyDict with " + this.value.size() + " items >"; }
+    //}
+    //
+    //export class PyFrozenSet extends PyComplex {
+    //    value:any;
+    //    constructor(offset:number, value:any) {
+    //        super(offset, "set");
+    //        this.value = value;
+    //    }
+    //}
+    var PyCodeObject = (function () {
         function PyCodeObject(offset, argcount, nlocals, stacksize, flags, code, consts, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab) {
-            _super.call(this, offset, "code_object");
+            this.value = "code-object";
+            this.type = "code-object";
+            //        super(offset, "code_object");
             this.argcount = argcount;
             this.nlocals = nlocals;
             this.stacksize = stacksize;
@@ -337,84 +302,44 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
             return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
         };
 
-        PyCodeObject.prototype.get_byteinfo_at = function (idx) {
-            var results = [];
-            var buf = this.code.value;
-            var i = idx;
-            if (buf && i < buf.length) {
-                var opc_name = opcodes.Opcode[buf[idx]];
-                results.push(opc_name);
-                i++;
-                if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length)
-                    return results;
-                var opc = opcodes.OpsWithArgs[opc_name];
-
-                // from byterun: intArg = byteint(arg[0]) + (byteint(arg[1]) << 8)
-                var nextBytes = buf.slice(i, i + 2);
-                var intArg = nextBytes[0] + (nextBytes[1] << 8);
-                i += 2;
-                var argVal;
-                if (opc.args == "const") {
-                    argVal = this.consts.get(intArg);
-                } else if (opc.args == "locals") {
-                    argVal = this.varnames.get(intArg);
-                } else if (opc.args == "names") {
-                    argVal = this.names.get(intArg);
-                } else {
-                    console.log("args don't match: " + opc.args);
-                }
-
-                //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-                if (argVal)
-                    results.push(argVal);
-            } else
-                throw new Error("PyCodeObject: error in get_byteinfo_at");
-            return results;
+        /** helper function because "in" is weird in javascript **/
+        PyCodeObject.prototype.contains = function (list, item) {
+            return list.indexOf(item) >= 0;
         };
 
-        PyCodeObject.prototype.parse_code = function () {
-            var result = [];
-            var buf = this.code.value;
-            if (buf) {
-                var i = 0;
-                var thisResult = [];
-                while (i < buf.length) {
-                    var opc_name = opcodes.Opcode[buf[i]];
-                    thisResult.push(opc_name);
-                    i++;
-                    if (!(opc_name in opcodes.OpsWithArgs) || i + 2 >= buf.length)
-                        break;
-                    var opc = opcodes.OpsWithArgs[opc_name];
-
-                    // from byterun: intArg = byteint(arg[0]) + (byteint(arg[1]) << 8)
-                    var nextBytes = buf.slice(i, i + 2);
-                    var intArg = nextBytes[0] + (nextBytes[1] << 8);
-                    i += 2;
-                    var argVal;
-                    if (opc.args == "const") {
-                        argVal = this.consts.get(intArg);
-                    } else if (opc.args == "locals") {
-                        argVal = this.varnames.get(intArg);
-                    } else if (opc.args == "names") {
-                        if (!this.names)
-                            throw new Error("PyCodeObj: this.names is undef");
-                        argVal = this.names.get(intArg);
-                    } else {
-                        console.log("args don't match: " + opc.args);
-                    }
-
-                    //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-                    if (argVal)
-                        thisResult.push(argVal.toString());
-                    result.push(thisResult);
-                }
+        /** used by the VM to get the opcode name at index i + the opcode's arg if it has one
+        * @return results = [opcode name, opcode number, arg if there is one] **/
+        PyCodeObject.prototype.get_byteinfo_at = function (i, lasti) {
+            var results = [];
+            var byteCode = this.code.toBuffer();
+            var op = byteCode.readUInt8(i);
+            var opcName = opcodes.Opcode[op];
+            if (opcName) {
+                results.push(opcName);
+                results.push(op);
             } else
-                throw new Error("this PyCodeObject's co_code is undefined");
-
-            for (var k = 0; k < result.length; k++) {
-                console.log(result[k]);
+                throw new Error("error in get_byteinfo_at(): unknown opcode: " + op);
+            if (op >= opcodes.HAVE_ARGUMENT) {
+                var nextBytes = byteCode.slice(i + 1, i + 2);
+                var intArg = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+                var argVal;
+                if (this.contains(opcodes.hasArgInNames, op))
+                    argVal = this.names.get(intArg);
+                else if (this.contains(opcodes.hasArgInConsts, op))
+                    argVal = this.consts.get(intArg);
+                else if (this.contains(opcodes.hasArgInLocals, op))
+                    argVal = this.varnames.get(intArg);
+                else if (this.contains(opcodes.hasJrel, op))
+                    argVal = lasti + intArg;
+                else if (this.contains(opcodes.hasFree, op))
+                    console.log("PyCodeObject.get_byteinfo_at(): HASFREE ARG NOT YET IMPLEMENTED"); //TODO
+                else if (this.contains(opcodes.hasCompare, op) || this.contains(opcodes.hasJabs, op))
+                    argVal = intArg;
+                else
+                    throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
+                results.push(argVal);
             }
-            return result;
+            return results;
         };
 
         PyCodeObject.prototype.print_co_code = function () {
@@ -433,60 +358,34 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
                 console.log("freevars: " + this.freevars.toString());
             if (this.cellvars)
                 console.log("cellvars: " + this.cellvars.toString());
-
             if (!this.code)
                 throw new Error("this PyCodeObject doesnt have any code");
             if (!this.code.value)
                 throw new Error("this PyCodeObjects code doesnt have a value");
-
-            console.log(this.code.value.readUInt8(0));
-
+            var byteCode = this.code.toBuffer();
             for (var i = 0; i < this.code.value.length; i += 3) {
-                //            if (!buf[i]) throw new Error("why does this suck");
-                //            console.log("\t OPNAME: " + buf[i].toString(16) + " " + opcodes.Opcode[buf[i]]); //+ " -- " + opcodes.BetterOpcodes[opcodes.Opcode[buf[i]]]);
+                var op = byteCode.readUInt8(i);
+                console.log("\topname: " + op.toString(16) + " " + opcodes.Opcode[op]);
+                if (op >= opcodes.HAVE_ARGUMENT) {
+                    var nextBytes = byteCode.slice(i + 1, i + 2);
+                    var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+                    if (this.contains(opcodes.hasArgInNames, op)) {
+                        console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
+                    } else if (this.contains(opcodes.hasArgInConsts, op)) {
+                        console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                    } else if (this.contains(opcodes.hasArgInLocals, op)) {
+                        console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
+                    } else if (this.contains(opcodes.hasJrel, op)) {
+                        console.log("\t\targ: jrel arg = lasti + " + idx);
+                    } else if (this.contains(opcodes.hasFree, op)) {
+                        console.log("\t\targ: hasFree --> NOT YET IMPLEMENTED"); //TODO
+                    } else {
+                        console.log("\t\targ: jabs or compare");
+                    }
+                }
             }
-            //        if (buf) {
-            //            var i = 0;
-            //            while (i < buf.length) {
-            //                if (!buf[i]) throw new Error("fuck this fucking entire world");
-            //                console.log("\t OPNAME: " + buf[i].toString(16) + " " + opcodes.Opcode[buf[i]]); //+ " -- " + opcodes.BetterOpcodes[opcodes.Opcode[buf[i]]]);
-            //
-            //                console.log(buf[i]);
-            //                var opc_name = opcodes.Opcode[buf[i]];
-            //                i++;
-            //
-            ////                if (i + 2 >= buf.length) break;
-            ////                if (!(opc_name in opcodes.OpsWithArgs) continue;//|| i + 2 >= buf.length) break;
-            //
-            //                var opc = opcodes.OpsWithArgs[opc_name];
-            //                if (opc) {
-            ////                var idx = buf.readInt16LE(i);
-            //                    var nextBytes = buf.slice(i, i + 2);
-            //                    var idx = nextBytes[0] + (nextBytes[1] << 8);
-            //                    i += 2;
-            //
-            //                    if (opc.args == "const") {
-            //                        console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
-            //                    } else if (opc.args == "locals") {
-            //                        console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
-            //                    } else if (opc.args == "names") {
-            //                        console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
-            //                    } else if (opc.args == "jrel") {
-            //                        console.log("\t\targ: jrel arg = lasti + " + idx);
-            //                    } else if (opc.args == "jabs") {
-            //                        console.log("\t\targ: jabs arg = " + idx);
-            //                    } else {
-            //                        console.log("args don't match: " + opc.args);
-            //                    }
-            //                    //TODO LOAD_CLOSURE, LOAD_DEREF, STORE_DEREF w/cellvars / freevars
-            //                }
-            //
-            //            }
-            //
-            //
-            //        } else throw new Error("this PyCodeObject's co_code is undefined");
         };
         return PyCodeObject;
-    })(PyComplex);
+    })();
     exports.PyCodeObject = PyCodeObject;
 });

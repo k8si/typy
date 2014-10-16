@@ -1,9 +1,8 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
-//This is to check commit.
-define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], function(require, exports, opcodes, utils, pyo, Long) {
+define(["require", "exports", './opcodes', './utils', './py_objects', "./interpret", 'long'], function(require, exports, opcodes, utils, pyo, interp, Long) {
     /**
-    * All of this was stolen directly from UnPyc (http://sourceforge.net/projects/unpyc/)
+    * All of this was stolen from UnPyc (http://sourceforge.net/projects/unpyc/)
     * All I did was port Python (from UnPyc/Parse.py) -> Typescript
     */
     /*
@@ -20,18 +19,13 @@ define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], f
         }
         Parser.prototype.parse = function (bstring, offset) {
             this.pc = 0;
-            console.log("\n< PARSING >");
+            console.log("\nparsing...");
             var buf = new Buffer(bstring.slice(offset, bstring.length));
             var pyObject = this.read_object(buf);
-            console.log("< /PARSING >\n");
-            ////            var vm = new interp.VirtualMachine();
-            ////            var result = vm.run_code(pyObject);
-            //
-            ////            console.log("FINALLY: result = " + result.toString());
-            ////            pyObject.parse_code();
-            ////            now, disassemble the object's co_code
-            ////            var interpreter = new interp.Interpreter();
-            ////            interpreter.interpret(pyObject);
+            console.log("done. starting interpreter...");
+            var vm = new interp.VirtualMachine();
+            var result = vm.run_code(pyObject);
+            console.log("finished.");
         };
 
         Parser.prototype.read_byte = function (data) {
@@ -172,40 +166,40 @@ define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], f
             var tm = this.type_map;
             switch (byte) {
                 case 79 /* NULL */:
-                    return new pyo.PyNull(offset);
+                    return new pyo.PyNull();
 
                 case 78 /* NONE */:
-                    return new pyo.PyNone(offset);
+                    return new pyo.PyNone();
 
                 case 83 /* STOPITER */:
-                    return new pyo.PyStopIter(offset);
+                    return new pyo.PyStopIter();
 
                 case 46 /* ELLIPSIS */:
-                    return new pyo.PyEllipsis(offset);
+                    return new pyo.PyEllipsis();
 
                 case 70 /* FALSE */:
-                    return new pyo.PyFalse(offset);
+                    return new pyo.PyFalse();
 
                 case 84 /* TRUE */:
-                    return new pyo.PyTrue(offset);
+                    return new pyo.PyTrue();
 
                 case 105 /* INT */:
                     //                console.log("found int @ " + offset);
-                    return new pyo.PyInt(offset, this.read_long(data));
+                    return new pyo.PyInt(this.read_long(data));
 
                 case 73 /* INT64 */:
                     //                console.log("found int64");
                     var lo4 = this.read_unsigned_long(data);
                     var hi4 = this.read_long(data);
-                    return new pyo.PyInt64(offset, new Long(lo4, hi4));
+                    return new pyo.PyInt64(new Long(lo4, hi4));
 
                 case 108 /* LONG */:
                     //                console.log("found long");
-                    return new pyo.PyLong(offset, this.read_type_long(data));
+                    return new pyo.PyLong(this.read_type_long(data));
 
                 case 102 /* FLOAT */:
                     //                console.log("found float");
-                    return new pyo.PyFloat(offset, this.read_float(data));
+                    return new pyo.PyFloat(this.read_float(data));
 
                 case 103 /* BINARY_FLOAT */:
                     //                console.log("found binary_float");
@@ -223,36 +217,37 @@ define(["require", "exports", './opcodes', './utils', './py_objects', 'long'], f
                     //                console.log("found interned @ " + offset);
                     var tmp = this.read_string(data);
                     this.internedStringList.push(tmp);
-                    return new pyo.PyInterned(offset, tmp);
+                    return new pyo.PyInterned(tmp);
 
                 case 115 /* STRING */:
                     //                console.log("found string @ " + offset);
-                    return new pyo.PyString(offset, this.read_string(data));
+                    return new pyo.PyString(this.read_string(data));
 
                 case 82 /* STRINGREF */:
                     //                console.log("found stringref @ " + offset);
                     var i = this.read_long(data);
                     var interned = this.internedStringList[i];
-                    return new pyo.PyStringRef(offset, interned);
+                    return new pyo.PyStringRef(interned);
 
                 case 117 /* UNICODE */:
                     var tmp = this.read_string(data);
-                    return new pyo.PyUnicode(offset, tmp.toString('utf8'));
+                    return new pyo.PyUnicode(tmp.toString('utf8'));
 
                 case 40 /* TUPLE */:
                     //                console.log("found tuple @ " + offset);
-                    return new pyo.PyTuple(offset, this.read_tuple(data));
+                    return new pyo.PyTuple(this.read_tuple(data));
 
                 case 91 /* LIST */:
-                    console.log("found list");
-                    return new pyo.PyList(offset, this.read_tuple(data));
+                    console.log("!!!! found list");
+                    return undefined;
 
                 case 123 /* DICT */:
-                    console.log("found dict @ " + offset);
-                    return new pyo.PyDict(offset, this.read_dict(data));
+                    console.log("!!!! found dict @ " + offset);
+                    return undefined;
 
                 case 62 /* FROZENSET */:
-                    return new pyo.PyFrozenSet(offset, this.read_tuple(data));
+                    console.log("!!!! found frozenset @ " + offset);
+                    return undefined;
 
                 case 99 /* CODE */:
                     //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
