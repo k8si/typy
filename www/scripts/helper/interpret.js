@@ -1,6 +1,6 @@
-/// <reference path="../lib/node/node.d.ts" />
-/// <reference path="../typings/long/long.d.ts" />
-define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(require, exports, pyo, utils, opcodes) {
+/// <reference path="lib/node/node.d.ts" />
+/// <reference path="typings/long/long.d.ts" />
+define(["require", "exports", "./py_objects", "./utils", './opcodes'], function (require, exports, pyo, utils, opcodes) {
     //TODO Block class
     //byterun: Block = collections.namedtuple("Block", "type, handler, level")
     var Block = (function () {
@@ -12,7 +12,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         return Block;
     })();
     exports.Block = Block;
-
     //TODO finish Function class
     var Function = (function () {
         function Function(name, py_code, globs, defaults, closure, vm) {
@@ -31,19 +30,18 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             else
                 this.__doc__ = undefined;
             /* TODO
-            # Sometimes, we need a real Python function.  This is for that.
-            kw = {
-            'argdefs': self.func_defaults,
-            }
-            if closure:
-            kw['closure'] = tuple(make_cell(0) for _ in closure)
-            self._func = types.FunctionType(code, globs, **kw)
-            */
+             # Sometimes, we need a real Python function.  This is for that.
+             kw = {
+             'argdefs': self.func_defaults,
+             }
+             if closure:
+             kw['closure'] = tuple(make_cell(0) for _ in closure)
+             self._func = types.FunctionType(code, globs, **kw)
+             */
         }
         Function.prototype.toString = function () {
             return "<Function " + this.func_name + ">";
         };
-
         //TODO should be return Method...
         Function.prototype.__get__ = function (instance, owner) {
             return this;
@@ -51,29 +49,26 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         Function.prototype.__call__ = function (a, args, kwargs) {
             if (a.length != this.func_code.argcount)
                 throw new Error("FUNCTION ERR");
-
             //TODO if PY2
             var callargs = new utils.Dict();
             callargs.add('a', a);
             callargs.add('args', args);
             callargs.add('kwargs', kwargs);
             var frame = this._vm.make_frame(this.func_code, callargs, this.func_globals, new utils.Dict());
-
             //TODO generator stuff:
             var CO_GENERATOR = 32;
             var retval;
             if (this.func_code.flags & CO_GENERATOR) {
                 retval = undefined;
-            } else {
+            }
+            else {
                 retval = this._vm.run_frame(frame);
             }
-
             return retval;
         };
         return Function;
     })();
     exports.Function = Function;
-
     //TODO test everything
     exports.UNARY_OPS = {
         POSITIVE: function (arg) {
@@ -90,9 +85,8 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         },
         INVERT: function (arg) {
             return arg;
-        }
+        } //TODO
     };
-
     //TODO finish these / everything
     exports.BINARY_OPS = {
         POWER: Math.pow,
@@ -110,7 +104,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             return x / y;
         }
     };
-
     var Frame = (function () {
         function Frame(code, globals, locals, back) {
             this.frame_code_object = code;
@@ -119,25 +112,17 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.back = back;
             if (back)
                 this.builtins = back.builtins;
-
             //TODO else { this.builtins = locals['__builtins__'] ...} (byterun/pyobj.py line 147)
             this.lineno = code.firstlineno;
             this.lasti = 0;
-
             //TODO: (byterun line 154)
             if (code.cellvars) {
-                //            this.cells = new utils.Dict<any>();
-                //            if (!back.cells) back.cells = new utils.Dict<any>();
-                //            //...
             }
             if (code.freevars) {
-                //TODO
             }
             this.block_stack = [];
             this.stack = [];
             this.generator = new pyo.PyNone();
-            //        this.builtins = new utils.Dict<any>();
-            //        this.builtins.add("range", "<NOT YET IMPLEMENTED>");
         }
         Frame.prototype.toString = function () {
             return "<Frame " + this.frame_code_object.filename + " " + this.lineno;
@@ -150,7 +135,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             var line_increments = [];
             for (var i = 1; i < lnotab.length; i += 2)
                 line_increments.push(lnotab[i]);
-
             //hopefully they are the same length...
             var byteNum = 0;
             var lineNum = this.frame_code_object.firstlineno;
@@ -165,7 +149,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         return Frame;
     })();
     exports.Frame = Frame;
-
     var VirtualMachine = (function () {
         function VirtualMachine() {
             this.ERR = "VM ERROR";
@@ -188,36 +171,33 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 result.push(this.frame.stack.pop());
             return result;
         };
-
         //TODO public peek(i:number)
         /** move the bytecode pointer to 'jump', so it will execute next **/
         VirtualMachine.prototype.jump = function (jump) {
             this.frame.lasti = jump;
         };
-
-        VirtualMachine.prototype.push_block = function (type, handler, level) {
+        VirtualMachine.prototype.pushBlock = function (type, handler, level) {
             if (!level)
                 level = this.frame.stack.length;
-            this.frame.block_stack.push(new Block(type, handler, level));
             //       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
         };
-
         VirtualMachine.prototype.pop_block = function () {
             return this.frame.block_stack.pop();
         };
-
         VirtualMachine.prototype.make_frame = function (code, callargs, globals, locals) {
-            if (typeof callargs === "undefined") { callargs = new utils.Dict(); }
+            if (callargs === void 0) { callargs = new utils.Dict(); }
             console.log("make frame: " + code.toString());
             var frame_globals, frame_locals;
             if (globals) {
                 frame_globals = globals;
                 if (locals)
                     frame_locals = globals;
-            } else if (this.frame) {
+            }
+            else if (this.frame) {
                 frame_globals = this.frame.globals;
                 frame_locals = new utils.Dict();
-            } else {
+            }
+            else {
                 frame_globals = new utils.Dict();
                 frame_globals.add("__builtins__", "NOTYETIMPLEMENTED");
                 frame_globals.add("__name__", "__main__");
@@ -229,7 +209,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             var frame = new Frame(code, frame_globals, frame_locals, this.frame);
             return frame;
         };
-
         //TODO push_frame
         VirtualMachine.prototype.push_frame = function (frame) {
             this.frames.push(frame);
@@ -242,7 +221,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             else
                 this.frame = undefined;
         };
-
         //TODO print_frames
         //TODO resume_frame
         VirtualMachine.prototype.run_code = function (code, globals, locals) {
@@ -254,7 +232,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 throw new Error(this.ERR);
             return val;
         };
-
         VirtualMachine.prototype.run_frame = function (frame) {
             var INFO = this.TAG + " run_frame: ";
             this.push_frame(frame);
@@ -281,13 +258,10 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 if (why)
                     break;
             }
-
             this.pop_frame();
-
             //TODO handle exceptions
             return this.returnval;
         };
-
         VirtualMachine.prototype.dispatch = function (byteName, byteCode, arg) {
             var INFO = this.TAG + " run_frame: ";
             var why;
@@ -301,7 +275,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 this.sliceOperator(byteName);
             else
                 why = this.getOp(byteCode, arg);
-
             //        else {
             //            why = this.getOp(byteName, args);
             ////            var bytecode_fn = this.getOp(byteName);
@@ -310,11 +283,10 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             //        }
             return why;
         };
-
         /**
-        *
-        * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
-        */
+         *
+         * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
+         */
         VirtualMachine.prototype.parse_byte_and_args = function () {
             var result = [];
             var f = this.frame;
@@ -334,16 +306,14 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 result.push(arg);
                 f.lasti += 2;
             }
-
             return result;
         };
-
         /*** for looping, handling exceptions, returning **/
         VirtualMachine.prototype.manage_block_stack = function (why) {
             var TAG = "manage_block_stack(why=" + why + ")";
             if (why == "yield")
                 throw new Error(this.ERR + " " + TAG);
-            var block = this.frame.block_stack[this.frame.block_stack.length - 1];
+            var block = this.frame.block_stack[this.frame.block_stack.length - 1]; //pop the last thing off the current frame's block stack
             var whyResult = why;
             if (block.type == "loop" && why == "continue") {
                 this.jump(this.returnval);
@@ -363,7 +333,8 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     this.push(tb);
                     this.push(value);
                     this.push(etype);
-                } else {
+                }
+                else {
                     if (why == "return" || why == "continue")
                         this.push(this.returnval);
                     this.push(why);
@@ -374,7 +345,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             }
             return whyResult;
         };
-
         VirtualMachine.prototype.unwind_block = function (block) {
             var offset;
             if (block.type == "except-handler")
@@ -390,18 +360,15 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 this.last_exception = [exceptionType, value, tb];
             }
         };
-
         VirtualMachine.prototype.unaryOperator = function (op) {
             var x = this.pop();
             this.push(exports.UNARY_OPS[op](x));
         };
-
         VirtualMachine.prototype.binaryOperator = function (op) {
             var x = this.pop();
             var y = this.pop();
             this.push(exports.BINARY_OPS[op](x, y));
         };
-
         VirtualMachine.prototype.inplaceOperator = function (op) {
             var x = this.pop();
             var y = this.pop();
@@ -415,7 +382,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 throw new Error(this.ERR);
             //TODO the rest of these
         };
-
         //TODO verify this works
         VirtualMachine.prototype.sliceOperator = function (op) {
             var start = 0;
@@ -446,14 +412,15 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 var pre = l.slice(0, start);
                 var post = l.slice(end, l.length);
                 l = pre.concat(res).concat(post);
-            } else if (op.search(/DELETE/) == 0) {
+            }
+            else if (op.search(/DELETE/) == 0) {
                 var pre = l.slice(0, start);
                 var post = l.slice(end, l.length);
                 l = l.concat(pre).concat(post);
-            } else
+            }
+            else
                 this.push(l.slice(start, end));
         };
-
         VirtualMachine.prototype.getOp = function (opcode, arg) {
             var result;
             switch (opcode) {
@@ -484,9 +451,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 case 107 /* COMPARE_OP */:
                     this.COMPARE_OP(arg);
                     break;
-                case 120 /* SETUP_LOOP */:
-                    this.SETUP_LOOP(arg);
-                    break;
                 case 110 /* JUMP_FORWARD */:
                     this.JUMP_FORWARD(arg);
                     break;
@@ -498,29 +462,19 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     var item = this.pop();
                     console.log(" >> " + item.toString());
                     break;
-                case 72 /* PRINT_NEWLINE */:
-                    console.log(" >> ");
-                    break;
                 default:
                     throw new Error("unknown opcode: " + opcode);
             }
             return undefined;
         };
-
         VirtualMachine.prototype.LOAD_CONST = function (constant) {
             console.log("\tLOAD_CONST " + constant.toString());
             this.push(constant);
         };
-
-        //TODO there are bugs here I think
         VirtualMachine.prototype.STORE_NAME = function (n) {
             console.log("\tSTORE_NAME " + n.toString());
-
-            //        console.assert(n.type == "string" || n.type == "interned-string" || n.type == "string-ref");
             this.frame.locals.add(n.value.toString(), this.pop());
         };
-
-        //TODO there are bugs here I think
         VirtualMachine.prototype.LOAD_NAME = function (n) {
             console.log("\tLOAD_NAME " + n.toString());
             var frame = this.frame;
@@ -530,13 +484,11 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 val = frame.locals.get(name);
             else if (frame.globals.contains(name))
                 val = frame.globals.get(name);
-            else {
+            else
                 throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
-            }
             if (val)
                 this.push(val);
         };
-
         VirtualMachine.prototype.ROT_TWO = function () {
             console.log("\tROT_TWO");
             var a = this.pop();
@@ -544,7 +496,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.push(b);
             this.push(a);
         };
-
         VirtualMachine.prototype.ROT_THREE = function () {
             console.log("\tROT_THREE");
             var a = this.pop();
@@ -554,19 +505,15 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             this.push(b);
             this.push(a);
         };
-
         VirtualMachine.prototype.DUP_TOP = function () {
             this.push(this.top());
         };
-
         VirtualMachine.prototype.RETURN_VALUE = function () {
             this.returnval = this.pop();
             console.log("\tRETURN_VALUE " + this.returnval.toString());
-
             //TODO if self.frame.generator
             return "return";
         };
-
         VirtualMachine.prototype.MAKE_FUNCTION = function (arg) {
             //        if (!arg) throw new Error(this.ERR + " MAKE_FUNCTION: no arg??");
             console.log("\tMAKE_FUNCTION"); //+ arg.toString());
@@ -579,7 +526,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
             var fn = new Function("", code, globs, defaults, undefined, this);
             this.push(fn);
         };
-
         VirtualMachine.prototype.COMPARE_OP = function (arg) {
             var y = this.pop();
             var x = this.pop();
@@ -599,7 +545,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     break;
                 case 4:
                     result = x.value > y.value;
-                    console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " > " + y.toString() + " => " + result);
                     break;
                 case 5:
                     result = x.value >= y.value;
@@ -607,22 +552,12 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 default:
                     break;
             }
-            console.log("\tCOMPARE_OP: " + arg.toString() + " : " + x.toString() + " <?> " + y.toString() + " => " + result);
-            if (!result)
-                throw new Error("fail");
+            console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
             this.push(result);
         };
-
-        VirtualMachine.prototype.SETUP_LOOP = function (dest) {
-            console.log("\tSETUP_LOOP");
-            this.push_block("loop", dest);
-        };
-
         VirtualMachine.prototype.JUMP_FORWARD = function (jump) {
-            console.log("\tJUMP_FORWARD: jump = " + jump.toString());
             this.jump(jump);
         };
-
         VirtualMachine.prototype.POP_JUMP_IF_FALSE = function (jump) {
             var val = this.pop();
             console.log("\tPOP_JUMP_IF_FALSE: val = " + val.toString());

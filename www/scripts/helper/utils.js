@@ -1,8 +1,9 @@
 /*
 Basically stolen from https://github.com/basarat/typescript-collections (because I haven't been able to get the module to work with Node)
+
 TODO if we're actually gonna use any of these, need to catch errors, test, etc.
-*/
-define(["require", "exports"], function(require, exports) {
+ */
+define(["require", "exports"], function (require, exports) {
     //interface IDict {
     //    add(key: string, value: any): void;
     //    remove(key: string): void;
@@ -22,13 +23,11 @@ define(["require", "exports"], function(require, exports) {
             this._keys.push(key);
             this._values.push(value);
         };
-
         Dict.prototype.remove = function (key) {
             var idx = this._keys.indexOf(key, 0);
             this._keys.splice(idx, 1);
             this._values.splice(idx, 1);
         };
-
         /* FIXME better implementation for this? Why doesn't "in" work? */
         Dict.prototype.contains = function (key) {
             var result = false;
@@ -36,14 +35,12 @@ define(["require", "exports"], function(require, exports) {
                 result = true;
             return result;
         };
-
         Dict.prototype.keys = function () {
             return this._keys;
         };
         Dict.prototype.values = function () {
             return this._values;
         };
-
         Dict.prototype.get = function (key) {
             if (this.contains(key)) {
                 var idx = this._keys.indexOf(key, 0);
@@ -51,11 +48,9 @@ define(["require", "exports"], function(require, exports) {
             }
             return undefined;
         };
-
         Dict.prototype.size = function () {
             return this._keys.length;
         };
-
         Dict.prototype.update = function (d) {
             var k = d.keys();
             var v = d.values();
@@ -66,7 +61,6 @@ define(["require", "exports"], function(require, exports) {
         return Dict;
     })();
     exports.Dict = Dict;
-
     //interface IMap {
     //    add(key: string, value: any): void;
     //    remove(key: string): void;
@@ -89,28 +83,24 @@ define(["require", "exports"], function(require, exports) {
             this._keys.push(key);
             this._values.push(value);
         };
-
         // TODO I have no idea if this actually works
         Map.prototype.remove = function (key) {
             var idx = this._keys.indexOf(key, 0);
             this._keys.splice(idx, 1);
             this._values.splice(idx, 1);
         };
-
         Map.prototype.contains = function (key) {
             var result = false;
             if (this._keys.indexOf(key) >= 0)
                 result = true;
             return result;
         };
-
         Map.prototype.keys = function () {
             return this._keys;
         };
         Map.prototype.values = function () {
             return this._values;
         };
-
         Map.prototype.get = function (key) {
             if (this.contains(key)) {
                 var idx = this._keys.indexOf(key, 0);
@@ -118,14 +108,12 @@ define(["require", "exports"], function(require, exports) {
             }
             return undefined;
         };
-
         Map.prototype.size = function () {
             return this._keys.length;
         };
         return Map;
     })();
     exports.Map = Map;
-
     var Stack = (function () {
         function Stack() {
             this.list = new Array();
@@ -154,62 +142,3 @@ define(["require", "exports"], function(require, exports) {
     })();
     exports.Stack = Stack;
 });
-///* some helper functions stolen from doppio and StackOverflow */
-//function bytestr_to_array(bytecode_string: string): number[] {
-//    var rv : number[] = [];
-//    for (var i = 0; i < bytecode_string.length; i++) {
-//        rv.push(bytecode_string.charCodeAt(i) & 0xFF);
-//        rv.push(bytecode_string.charCodeAt(i));
-//    }
-//    return rv;
-//}
-//export function byte2str(byte: number): string {
-//    var s = byte <= 0x7f ? byte === 0x25 ? "%25" : String.fromCharCode(byte) : "%" + byte.toString(16).toUpperCase();
-//    return decodeURIComponent(s);
-//}
-//
-//export function byteArrayToUTF8(byteArray): string {
-//    var str = '';
-//    for (var i = 0; i < byteArray.length; i++)
-//        str +=  byteArray[i] <= 0x7F?
-//                byteArray[i] === 0x25 ? "%25" : // %
-//            String.fromCharCode(byteArray[i]) :
-//            "%" + byteArray[i].toString(16).toUpperCase();
-//    return decodeURIComponent(str);
-//};
-//
-//export function utf8toByteArray(str): number[] {
-//    var byteArray = [];
-//    for (var i = 0; i < str.length; i++)
-//        if (str.charCodeAt(i) <= 0x7F)
-//            byteArray.push(str.charCodeAt(i));
-//        else {
-//            var h = encodeURIComponent(str.charAt(i)).substr(1).split('%');
-//            for (var j = 0; j < h.length; j++)
-//                byteArray.push(parseInt(h[j], 16));
-//        }
-//    return byteArray;
-//};
-//
-//export function bytes2str(bytes: number[], null_terminate?: boolean): string {
-//    var y : number;
-//    var z : number;
-//    var idx = 0;
-//    var rv = '';
-//    while (idx < bytes.length) {
-//        var x = bytes[idx++] & 0xff;
-////            if (null_terminate && x == 0) {
-////                break;
-////            }
-//        rv += String.fromCharCode(x <= 0x7f ? x : x <= 0xdf ? (y = bytes[idx++], ((x & 0x1f) << 6) + (y & 0x3f)) : (y = bytes[idx++], z = bytes[idx++], ((x & 0xf) << 12) + ((y & 0x3f) << 6) + (z & 0x3f)));
-//    }
-//    return rv;
-//}
-//
-//export function byteArray2Buffer(bytes: number[], offset: number = 0, len: number = bytes.length): NodeBuffer {
-//    var buff = new Buffer(len), i: number;
-//    for (i = 0; i < len; i++) {
-//        buff.writeInt32LE(bytes[offset + i], i);
-//    }
-//    return buff;
-//}

@@ -1,7 +1,7 @@
 /**
-* Created by kate on 9/25/14.
-*/
-define(["require", "exports"], function(require, exports) {
+ * Created by kate on 9/25/14.
+ */
+define(["require", "exports"], function (require, exports) {
     //TODO finish filling in these lists
     /** arg = index in name list (codeobject.names) **/
     exports.hasArgInNames = [
@@ -16,19 +16,16 @@ define(["require", "exports"], function(require, exports) {
         108 /* IMPORT_NAME */,
         109 /* IMPORT_FROM */
     ];
-
     /** arg = index in consts list (codeobject.consts) **/
     exports.hasArgInConsts = [
         100 /* LOAD_CONST */
     ];
-
     /** arg = local variable number **/
     exports.hasArgInLocals = [
         124 /* LOAD_FAST */,
         125 /* STORE_FAST */,
         126 /* DELETE_FAST */
     ];
-
     /** arg = target byte offset from beginning of code **/
     exports.hasJabs = [
         111 /* JUMP_IF_FALSE_OR_POP */,
@@ -37,18 +34,14 @@ define(["require", "exports"], function(require, exports) {
         114 /* POP_JUMP_IF_FALSE */,
         115 /* POP_JUMP_IF_TRUE */
     ];
-
     exports.hasJrel = [
         110 /* JUMP_FORWARD */
     ];
-
     /** arg = int corresponding to comparison operator (see interpet.ts COMPARE_OP) **/
     exports.hasCompare = [107 /* COMPARE_OP */];
-
     exports.hasFree = [
         134 /* MAKE_CLOSURE */
     ];
-
     /* OTHER:
     arg = number of sequence items:
     UNPACK_SEQUENCE
@@ -71,9 +64,8 @@ define(["require", "exports"], function(require, exports) {
     BUILD_MAP
     
     
-    */
-    exports.HAVE_ARGUMENT = 90;
-
+     */
+    exports.HAVE_ARGUMENT = 90; //any opcode >= 90 has an argument
     //list taken from CPython: https://hg.python.org/cpython/file/7ba47bbfe38d/Include/opcode.h
     (function (Opcode) {
         Opcode[Opcode["STOP_CODE"] = 0] = "STOP_CODE";
@@ -137,7 +129,6 @@ define(["require", "exports"], function(require, exports) {
         Opcode[Opcode["POP_BLOCK"] = 87] = "POP_BLOCK";
         Opcode[Opcode["END_FINALLY"] = 88] = "END_FINALLY";
         Opcode[Opcode["BUILD_CLASS"] = 89] = "BUILD_CLASS";
-
         //opcodes from here have an argument
         Opcode[Opcode["STORE_NAME"] = 90] = "STORE_NAME";
         Opcode[Opcode["DELETE_NAME"] = 91] = "DELETE_NAME";
@@ -190,7 +181,6 @@ define(["require", "exports"], function(require, exports) {
         Opcode[Opcode["MAP_ADD"] = 147] = "MAP_ADD";
     })(exports.Opcode || (exports.Opcode = {}));
     var Opcode = exports.Opcode;
-
     //TODO what about regular Sets (not Frozensets)?
     (function (TypeMap) {
         TypeMap[TypeMap["NULL"] = 79] = "NULL";
@@ -214,7 +204,7 @@ define(["require", "exports"], function(require, exports) {
         TypeMap[TypeMap["LIST"] = 91] = "LIST";
         TypeMap[TypeMap["DICT"] = 123] = "DICT";
         TypeMap[TypeMap["FROZENSET"] = 62] = "FROZENSET";
-        TypeMap[TypeMap["CODE"] = 99] = "CODE";
+        TypeMap[TypeMap["CODE"] = 99] = "CODE"; // 'c'
     })(exports.TypeMap || (exports.TypeMap = {}));
     var TypeMap = exports.TypeMap;
     ;
