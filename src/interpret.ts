@@ -6,8 +6,14 @@ import utils = require("./utils");
 import opcodes = require('./opcodes');
 
 //TODO Block class
+//byterun: Block = collections.namedtuple("Block", "type, handler, level")
 export class Block {
-
+    public type: any;
+    public handler: any;
+    public level: any;
+    constructor(type:any, handler:any, level:any){
+        this.type = type; this.handler = handler; this.level = level;
+    }
 }
 
 //TODO finish Function class
@@ -156,6 +162,7 @@ export class VirtualMachine {
     private returnval: any;
     private ERR = "VM ERROR";
     private TAG = "VirtualMachine:";
+    private last_exception: any[];
 
     constructor(){ this.frames = []; }
 
@@ -177,8 +184,8 @@ export class VirtualMachine {
 //       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
     }
 
-    private popBlock(): Block { return this.frame.block_stack.pop(); }
-    //TODO pop_block()
+    private pop_block(): Block { return this.frame.block_stack.pop(); }
+
     private make_frame(code:pyo.PyCodeObject, callargs=new utils.Dict<any>(), globals?:any, locals?:any): Frame {
         console.log("make frame: " + code.toString());
         var frame_globals, frame_locals;
@@ -229,12 +236,12 @@ export class VirtualMachine {
             var byteName = byteinfo[0]; var args = byteinfo[1]; var offset = byteinfo[2];
             if (args && args.length == 0) args = undefined;
             var why = this.dispatch(byteName, args);
-            //TODO if why == 'exception', reraise
-//            if (why != "yield") {
-//                while(why && frame.block_stack) {
-//                    why = this.manage_block_stack(why);
-//                }
-//            }
+            if (why == "exception") console.log(INFO + " why == exception (TODO)");
+            if (why == "reraise") why = "exception";
+            if (why != "yield") {
+                //TODO in byterun this is while (why && frame.block_stack) but I don't know why frame.block_stack would disappear?
+                while (why && frame.block_stack.length > 0) why = this.manage_block_stack(why);
+            }
             if (why) break;
         }
         this.pop_frame();
@@ -273,17 +280,50 @@ export class VirtualMachine {
         return result;
     }
 
-    //TODO
+    /*** for looping, handling exceptions, returning **/
     private manage_block_stack(why:string): string {
-        return undefined;
-//        if (why == "yield") throw new Error(this.ERR);
-//        var block = this.frame.block_stack[this.frame.block_stack.length-1];
-//        //TODO if block.type == loop ....
-//        this.popBlock();
-//        //TODO this.unwind_block(block)
-//        //TODO everything else...
-//        why = "yield";
-//        return why;
+        var TAG = "manage_block_stack(why="+why+")";
+        if (why == "yield") throw new Error(this.ERR + " " + TAG);
+        var block = this.frame.block_stack[this.frame.block_stack.length - 1]; //pop the last thing off the current frame's block stack
+        var whyResult = why;
+        if (block.type == "loop" && why == "continue") {
+            this.jump(this.returnval);
+            whyResult = undefined;
+            return whyResult;
+        }
+        this.pop_block();
+        this.unwind_block(block);
+        if (block.type == "loop" && why == "break") {
+            whyResult = undefined;
+            this.jump(block.handler);
+            return whyResult;
+        }
+        if (block.type = "finally" || (block.type == "setup-except" && why == "exception") || block.type == "with") {
+            if (why == "exception") {
+                var etype = this.last_exception[0], value = this.last_exception[1], tb = this.last_exception[2];
+                this.push(tb); this.push(value); this.push(etype);
+            } else {
+                if (why == "return" || why == "continue") this.push(this.returnval);
+                this.push(why);
+            }
+            whyResult = undefined;
+            this.jump(block.handler);
+            return whyResult;
+        }
+        return whyResult;
+    }
+
+    private unwind_block(block:Block): void {
+        var offset;
+        if (block.type == "except-handler") offset = 3;
+        else offset = 0;
+        while (this.frame.stack.length > block.level + offset) this.pop();
+        if (block.type == "except-handler") {
+            var tb = this.pop();
+            var value = this.pop();
+            var exceptionType = this.pop();
+            this.last_exception = [exceptionType, value, tb];
+        }
     }
 
     private dispatch(byteName:string, args:any): any {

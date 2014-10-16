@@ -58,7 +58,9 @@ define(["require", "exports"], function(require, exports) {
         Opcode[Opcode["ROT_TWO"] = 0x02] = "ROT_TWO";
         Opcode[Opcode["ROT_THREE"] = 0x03] = "ROT_THREE";
         Opcode[Opcode["DUP_TOP"] = 0x04] = "DUP_TOP";
+        Opcode[Opcode["ROT_FOUR"] = 0x05] = "ROT_FOUR";
         Opcode[Opcode["UNARY_POSITIVE"] = 0x0A] = "UNARY_POSITIVE";
+        Opcode[Opcode["UNARY_NEGATIVE"] = 0x0B] = "UNARY_NEGATIVE";
 
         Opcode[Opcode["BINARY_ADD"] = 0x17] = "BINARY_ADD";
         Opcode[Opcode["BINARY_DIVIDE"] = 0x15] = "BINARY_DIVIDE";
