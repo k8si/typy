@@ -111,9 +111,6 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         }
     };
 
-    //TODO
-    exports.COMPARE_OPS = {};
-
     var Frame = (function () {
         function Frame(code, globals, locals, back) {
             this.frame_code_object = code;
@@ -472,6 +469,9 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                 case 2 /* ROT_TWO */:
                     this.ROT_TWO();
                     break;
+                case 3 /* ROT_THREE */:
+                    this.ROT_THREE();
+                    break;
                 case 132 /* MAKE_FUNCTION */:
                     this.MAKE_FUNCTION(arg);
                     break;
@@ -480,6 +480,16 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
                     break;
                 case 107 /* COMPARE_OP */:
                     this.COMPARE_OP(arg);
+                    break;
+                case 110 /* JUMP_FORWARD */:
+                    this.JUMP_FORWARD(arg);
+                    break;
+                case 114 /* POP_JUMP_IF_FALSE */:
+                    this.POP_JUMP_IF_FALSE(arg);
+                    break;
+                case 71 /* PRINT_ITEM */:
+                    var item = this.pop();
+                    console.log(" >> " + item.toString());
                     break;
                 default:
                     throw new Error("unknown opcode: " + opcode);
@@ -556,27 +566,27 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
         };
 
         VirtualMachine.prototype.COMPARE_OP = function (arg) {
-            var x = this.pop();
             var y = this.pop();
+            var x = this.pop();
             var result;
             switch (arg) {
                 case 0:
-                    result = x < y;
+                    result = x.value < y.value;
                     break;
                 case 1:
-                    result = x <= y;
+                    result = x.value <= y.value;
                     break;
                 case 2:
-                    result = x == y;
+                    result = x.value == y.value;
                     break;
                 case 3:
-                    result = x != y;
+                    result = x.value != y.value;
                     break;
                 case 4:
-                    result = x > y;
+                    result = x.value > y.value;
                     break;
                 case 5:
-                    result = x >= y;
+                    result = x.value >= y.value;
                     break;
                 default:
                     break;
@@ -585,6 +595,17 @@ define(["require", "exports", "./py_objects", "./utils", './opcodes'], function(
 
             //        var result = COMPARE_OPS[arg](x, y);
             this.push(result);
+        };
+
+        VirtualMachine.prototype.JUMP_FORWARD = function (jump) {
+            this.jump(jump);
+        };
+
+        VirtualMachine.prototype.POP_JUMP_IF_FALSE = function (jump) {
+            var val = this.pop();
+            console.log("\tPOP_JUMP_IF_FALSE: val = " + val.toString());
+            if (!val)
+                this.jump(jump);
         };
         return VirtualMachine;
     })();

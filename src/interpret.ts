@@ -100,11 +100,6 @@ export var BINARY_OPS = {
     //...
 };
 
-//TODO
-export var COMPARE_OPS = {
-
-};
-
 
 export class Frame {
     frame_code_object: pyo.PyCodeObject;
@@ -410,9 +405,17 @@ export class VirtualMachine {
             case opcodes.Opcode.LOAD_NAME: this.LOAD_NAME(arg); break;
             case opcodes.Opcode.POP_TOP: this.pop(); break;
             case opcodes.Opcode.ROT_TWO: this.ROT_TWO(); break;
+            case opcodes.Opcode.ROT_THREE: this.ROT_THREE(); break;
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
             case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
+            case opcodes.Opcode.JUMP_FORWARD: this.JUMP_FORWARD(arg); break;
+            case opcodes.Opcode.POP_JUMP_IF_FALSE: this.POP_JUMP_IF_FALSE(arg); break;
+            case opcodes.Opcode.PRINT_ITEM:
+                //TODO we should make some kind of "stdout" for the browser (to print to the actual HTML page)
+                var item = this.pop();
+                console.log(" >> " + item.toString());
+                break;
             default: throw new Error("unknown opcode: " + opcode);
         }
         return undefined;
@@ -483,22 +486,30 @@ export class VirtualMachine {
     }
 
     private COMPARE_OP(arg:any): void {
-        var x = this.pop();
         var y = this.pop();
+        var x = this.pop();
         var result;
         switch (arg) {
-            case 0: result = x < y; break;
-            case 1: result = x <= y; break;
-            case 2: result = x == y; break;
-            case 3: result = x != y; break;
-            case 4: result = x > y; break;
-            case 5: result = x >= y; break;
+            case 0: result = x.value < y.value; break;
+            case 1: result = x.value <= y.value; break;
+            case 2: result = x.value == y.value; break;
+            case 3: result = x.value != y.value; break;
+            case 4: result = x.value > y.value; break;
+            case 5: result = x.value >= y.value; break;
             default: break;
             //TODO case 6: x IS y; case 7: x IS NOT y; default: goto slow_compare
         }
         console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
-
-//        var result = COMPARE_OPS[arg](x, y);
         this.push(result);
+    }
+
+    private JUMP_FORWARD(jump:number): void {
+        this.jump(jump);
+    }
+
+    private POP_JUMP_IF_FALSE(jump:any): void {
+        var val = this.pop();
+        console.log("\tPOP_JUMP_IF_FALSE: val = " + val.toString());
+        if (!val) this.jump(jump);
     }
 }

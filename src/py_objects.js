@@ -1,16 +1,8 @@
 /// <reference path="../lib/node/node.d.ts" />
 /// <reference path="../typings/long/long.d.ts" />
 define(["require", "exports", "./opcodes"], function(require, exports, opcodes) {
-    //export class PyObject {
-    //    public value: any; //guarantees that all things that inherit have a defined value field
-    //    public type: string;
-    //    constructor(value: any, type: string){
-    //        this.value = value;
-    //        this.type = type;
-    //    }
-    //    public toString(): string { return "<py-"+this.type+" value=" + this.value + ">"; }
-    //    public eq<T extends PyObject>(other: T): boolean { return other.type == this.type; }
-    //}
+    
+
     var PyNull = (function () {
         function PyNull() {
             this.value = null;
@@ -105,9 +97,7 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
     })();
     exports.PyInt = PyInt;
 
-    /**
-    * TODO not sure if value should be type Long?
-    */
+    //TODO should this really be of type Long ?
     var PyInt64 = (function () {
         function PyInt64(value) {
             this.type = "int64";
@@ -153,6 +143,7 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
             this.type = "string";
             this.value = value.toString();
         }
+        //for reading bytecode byte by byte in PyCodeObject methods
         PyString.prototype.toBuffer = function () {
             return new Buffer(this.value);
         };
@@ -166,7 +157,6 @@ define(["require", "exports", "./opcodes"], function(require, exports, opcodes) 
     var PyInterned = (function () {
         function PyInterned(value) {
             this.type = "interned-string";
-            //        super(offset, "interned");
             this.value = value.toString();
         }
         PyInterned.prototype.toString = function () {

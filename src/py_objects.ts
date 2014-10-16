@@ -17,9 +17,9 @@
 
 /*
  TODO:
- PyUnicode
  PyComplex (complex number)
  PySet
+ others....
  */
 
 import opcodes = require("./opcodes");
