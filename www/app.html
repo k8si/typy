@@ -2,16 +2,35 @@
 <html>
 <head lang="en">
     <meta charset="UTF-8">
-    <title></title>
+    <title>TyPy</title>
+    <!-- because why not -->
+    <style> div { font-family: "Helvetica", Arial, Verdana, serif; } </style>
     <script src="scripts/browserfs.js"></script>
     <script data-main="scripts/main" src="scripts/require.js"></script>
 </head>
 <body>
 
-<h1>hello?</h1>
+<div align="center">
 
-<input type="file" id="files" name="files[]" multiple />
-<output id="list"></output>
+    <h1>TyPy</h1>
+
+    <h3>a python 2.7 bytecode interpreter in the browser</h3>
+
+    based on <a href="http://sourceforge.net/projects/unpyc/">UnPyc</a>,
+        <a href="https://github.com/nedbat/byterun/">byterun</a>,
+        <a href="https://github.com/daeken/RMarshal">RMarshall</a>, and others.
+
+    <br>
+    <br>
+
+    upload a <strong>*.pyc</strong> file:
+    <input type="file" id="files" name="files[]" multiple />
+    <output id="list"></output>
+
+</div>
+
+
+
 
 
 </body>
