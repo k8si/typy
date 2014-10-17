@@ -1,5 +1,5 @@
-/// <reference path="../../../lib/node/node.d.ts" />
-/// <reference path="../typings/long/long.d.ts" />
+/// <reference path="lib/node/node.d.ts" />
+/// <reference path="typings/long/long.d.ts" />
 
 /**
  * Created by kate on 9/28/14.
@@ -34,6 +34,9 @@ export interface PyObject {
 //    eq<T>(other: T): boolean;
     toString(): string;
 }
+
+//constants
+//constants: "null", "none", "stopiter", ... ? dont't reeally need objects
 
 export class PyNull implements PyObject {
     public value = null;
@@ -278,18 +281,11 @@ export class PyCodeObject implements PyObject {
     }
 
     public toString(): string {
-        var info = "argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
-        var names;
-        if (this.names)
-            names = "names: " + this.names.toString();
-        else names = "";
-        var name;
-        if (this.name) name = "name: " + this.name.toString();
-        else name = "";
-        var fname;
-        if (this.filename) fname = "filename: " + this.filename;
-        else fname = "";
-        return "<PyCodeObject " + info + " " + names + " " + name + " " + fname + " >";
+        var info = "<PyCodeObject argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
+        if (this.names) info += "names: " + this.names.toString() + " \n";
+        if (this.consts) info += "consts: " + this.consts.toString() + " \n";
+        if (this.varnames) info += "locals: " + this.consts.toString() + " \n";
+        return info;
     }
 
     /** helper function because "in" is weird in javascript **/
@@ -300,16 +296,26 @@ export class PyCodeObject implements PyObject {
     public get_byteinfo_at(i:number, lasti:number): any[] {
         var results = [];
         var byteCode = this.code.toBuffer();
+        console.log("get_byteinfo_at idx = " + i + " / " + byteCode.length);
+
+        if (i >= byteCode.length) {
+            console.log("ERROR: PyCodeObject get_byteinfo_at(): index " + i + " out of range (len = " + byteCode.length + ")");
+            return results;
+        }
         var op = byteCode.readUInt8(i);
         var opcName = opcodes.Opcode[op];
         if (opcName) {results.push(opcName); results.push(op); }
         else throw new Error("error in get_byteinfo_at(): unknown opcode: " + op);
         if (op >= opcodes.HAVE_ARGUMENT) {
+            if (i+2 >= byteCode.length) throw new Error("PyCodeObject get_byteinfo_at(): index " + i+2 + " out of range.");
             var nextBytes = byteCode.slice(i+1, i+2);
             var intArg = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
             var argVal;
             if (this.contains(opcodes.hasArgInNames, op)) argVal = this.names.get(intArg);
-            else if (this.contains(opcodes.hasArgInConsts, op)) argVal = this.consts.get(intArg);
+            else if (this.contains(opcodes.hasArgInConsts, op)) {
+
+                argVal = this.consts.get(intArg);
+            }
             else if (this.contains(opcodes.hasArgInLocals, op)) argVal = this.varnames.get(intArg);
             else if (this.contains(opcodes.hasJrel, op)) argVal = lasti + intArg;
             else if (this.contains(opcodes.hasFree, op)) console.log("PyCodeObject.get_byteinfo_at(): HASFREE ARG NOT YET IMPLEMENTED"); //TODO
@@ -317,6 +323,7 @@ export class PyCodeObject implements PyObject {
             else throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
             results.push(argVal);
         }
+        console.log("done with get_byteinfo_at.");
         return results;
     }
 

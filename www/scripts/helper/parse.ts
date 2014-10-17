@@ -1,5 +1,5 @@
-/// <reference path="../../../lib/node/node.d.ts" />
-/// <reference path="../typings/long/long.d.ts" />
+/// <reference path="lib/node/node.d.ts" />
+/// <reference path="typings/long/long.d.ts" />
 
 import fs = require('fs');
 import path = require('path');
@@ -159,7 +159,7 @@ export class Parser {
     //TODO this could probably be more succint
     private read_object(data:Buffer, extra?: string): any {
         if (this.pc + 1 > data.length) throw new Error("parser error");
-        console.log(typeof data);
+//        console.log(typeof data);
 //        var byte = 0;
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
 //        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
@@ -243,17 +243,18 @@ export class Parser {
 
             case tm.LIST:
                 console.log("!!!! found list");
-                return undefined;
+                throw new Error("parse.ts: not yet implemented");
 //                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
             case tm.DICT:
                 console.log("!!!! found dict @ " + offset);
-                return undefined;
+                throw new Error("parse.ts: not yet implemented");
 //                return new pyo.PyDict(offset, this.read_dict(data)); //TODO
 
             case tm.FROZENSET:
                 console.log("!!!! found frozenset @ " + offset);
-                return undefined;
+                throw new Error("parse.ts: not yet implemented");
+//                return undefined;
 //                return new pyo.PyFrozenSet(offset, this.read_tuple(data));
 //                return undefined; //TODO
 
@@ -289,15 +290,16 @@ export class Parser {
                     firstlineno, lnotab
                 );
 
-                console.log(obj.toString());
-                obj.print_co_code();
+//                console.log(obj.toString());
+//                obj.print_co_code();
 //                obj.parse_co_code();
 
                 return obj;
 
             default:
                 console.log('unknown type');
-                return undefined;
+                throw new Error("parse.ts: not yet implemented");
+//                return undefined;
         }
     }
 }

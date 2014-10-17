@@ -1,83 +1,10 @@
-/// <reference path="../../../lib/node/node.d.ts" />
-/// <reference path="../typings/long/long.d.ts" />
+/// <reference path="lib/node/node.d.ts" />
+/// <reference path="typings/long/long.d.ts" />
 
 import pyo = require("./py_objects");
 import utils = require("./utils");
 import opcodes = require('./opcodes');
-
-//TODO Block class
-//byterun: Block = collections.namedtuple("Block", "type, handler, level")
-export class Block {
-    public type: any;
-    public handler: any;
-    public level: any;
-    constructor(type:any, handler:any, level:any){
-        this.type = type; this.handler = handler; this.level = level;
-    }
-}
-
-//TODO finish Function class
-export class Function {
-    //attrs
-    func_code: any;
-    func_name: string;
-    func_defaults: any[];
-    func_locals: any;
-    func_globals: any;
-    func_dict: utils.Dict<any>;
-    func_closure: any;
-    __doc__: any;
-    _vm: any;
-
-    constructor(name:string, py_code:pyo.PyCodeObject, globs:any, defaults:any, closure:any, vm:any) {
-        this._vm = vm;
-        this.func_code = py_code;
-        if (py_code.name) this.func_name = py_code.name.toString();
-        else this.func_name = "???";
-        this.func_defaults = [defaults];
-        this.func_globals = globs;
-        this.func_dict = new utils.Dict<any>();
-        this.func_closure = closure;
-        if (py_code.consts && (py_code.consts.value.length > 0)) this.__doc__ = py_code.consts[0];
-        else this.__doc__ = undefined;
-
-        /* TODO
-         # Sometimes, we need a real Python function.  This is for that.
-         kw = {
-         'argdefs': self.func_defaults,
-         }
-         if closure:
-         kw['closure'] = tuple(make_cell(0) for _ in closure)
-         self._func = types.FunctionType(code, globs, **kw)
-         */
-    }
-
-    public toString(){ return "<Function " + this.func_name +">";}
-
-    //TODO should be return Method...
-    public __get__(instance: any, owner: any): any { return this; }
-    public __call__(a:any[], args?:any[], kwargs?:utils.Dict<any>): any {
-        if (a.length != this.func_code.argcount) throw new Error("FUNCTION ERR");
-        //TODO if PY2
-        var callargs = new utils.Dict<any>();
-        callargs.add('a', a);
-        callargs.add('args', args);
-        callargs.add('kwargs', kwargs);
-        var frame = this._vm.make_frame(this.func_code, callargs, this.func_globals, new utils.Dict<any>());
-
-        //TODO generator stuff:
-        var CO_GENERATOR = 32;
-        var retval;
-        if (this.func_code.flags & CO_GENERATOR) {
-            retval = undefined;
-        } else {
-            retval = this._vm.run_frame(frame);
-        }
-
-        return retval;
-    }
-}
-
+import vmo = require('./vm_objects');
 
 
 //TODO test everything
@@ -100,88 +27,73 @@ export var BINARY_OPS = {
     //...
 };
 
-
-export class Frame {
-    frame_code_object: pyo.PyCodeObject;
-    globals: utils.Dict<any>;//any; // TODO should be Dict ?
-    locals: utils.Dict<any>; //any; // TODO should be Dict ?
-    back: Frame;
-    stack: any[]; //TODO a stack of what?
-    builtins: any[];
-    lineno: number;
-    lasti: number;
-    cells: utils.Dict<any>;
-    block_stack: Block[];
-    generator:any;
-
-    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
-        this.frame_code_object = code; this.globals = globals; this.locals = locals; this.back = back;
-        if (back) this.builtins = back.builtins;
-        //TODO else { this.builtins = locals['__builtins__'] ...} (byterun/pyobj.py line 147)
-        this.lineno = code.firstlineno;
-        this.lasti = 0;
-        //TODO: (byterun line 154)
-        if (code.cellvars) {
-//            this.cells = new utils.Dict<any>();
-//            if (!back.cells) back.cells = new utils.Dict<any>();
-//            //...
-        }
-        if (code.freevars) {
-            //TODO
-        }
-        this.block_stack = [];
-        this.stack = [];
-        this.generator = new pyo.PyNone();
-    }
-    public toString(): string { return "<Frame " + this.frame_code_object.filename + " " + this.lineno; }
-    public lineNumber(): number {
-        var lnotab = this.frame_code_object.lnotab;
-        var byte_increments = [];
-        for (var i = 0; i < lnotab.length; i += 2) byte_increments.push(lnotab[i]);
-        var line_increments = [];
-        for (var i = 1; i < lnotab.length; i += 2) line_increments.push(lnotab[i]);
-        //hopefully they are the same length...
-        var byteNum = 0; var lineNum = this.frame_code_object.firstlineno;
-        for (var i = 0; i < byte_increments.length; i += 1) {
-            byteNum += byte_increments[i];
-            if (byteNum > this.lasti) break;
-            lineNum += line_increments[i];
-        }
-        return lineNum;
-    }
+/** status code for main loop (reason for stack unwind) **/
+export enum WHY {
+    NONE = 0x0001, //no error
+    EXCEPTION = 0x0002, //exception occurred
+    RERAISE = 0x0004, //exception re-raised by 'finally'
+    RETURN = 0x008, //return statement
+    BREAK = 0x0010, //break statement
+    CONTINUE = 0x0020, //continue statement
+    YIELD = 0x0040 //yield operator
 }
 
 export class VirtualMachine {
-    private frames: Frame[];
-    private frame: Frame;
+    private frames: vmo.Frame[]; //call stack of frames
+    private frame: vmo.Frame; //the current frame
     private returnval: any;
     private ERR = "VM ERROR";
     private TAG = "VirtualMachine:";
     private last_exception: any[];
+    private stdout: string[];
 
-    constructor(){ this.frames = []; }
+    constructor(){ this.frames = []; this.stdout = []; }
 
-    private top(): any { return this.frame.stack[this.frame.stack.length - 1]; }
-    private pop(): any { return this.frame.stack.pop(); }
-    private push(val: any): void { this.frame.stack.push(val); }
-    private popn(n: number): Array<any> {
-        console.assert(n < this.frame.stack.length, "ArrayIndex out of bounds");
-        var result = [];
-        for (var i = 0; i < n; i++) result.push(this.frame.stack.pop());
-        return result;
+    private raise_error(msg:string): void {
+        console.log(this.ERR + " " + msg);
+        this.frame.frame_code_object.print_co_code();
+        throw new Error(this.ERR + " " + msg)
     }
+
+    private print(s:string): void { this.stdout.push(s); }
+
+    private top(): any {
+        if (this.frame.stack.length == 0) this.raise_error("top(): frame stack empty.");
+        return this.frame.stack[this.frame.stack.length - 1];
+    }
+
+    /** pop the top frame off the call stack **/
+    private pop(): any {
+        if (this.frame.stack.length == 0) this.raise_error("pop(): frame stack empty.");
+        return this.frame.stack.pop();
+    }
+
+    /** push a frame onto the top of the call stack **/
+    private push(val: any): void { this.frame.stack.push(val); }
+
+//    private popn(n: number): Array<any> {
+//        console.assert(n < this.frame.stack.length, "ArrayIndex out of bounds");
+//        var result = [];
+//        for (var i = 0; i < n; i++) result.push(this.frame.stack.pop());
+//        return result;
+//    }
+
     //TODO public peek(i:number)
+
     /** move the bytecode pointer to 'jump', so it will execute next **/
     private jump(jump:number): void { this.frame.lasti = jump; }
 
-    private pushBlock(type:any, handler?:any, level?:any): void {
+    private push_block(type:any, handler?:any, level?:any): void {
         if (!level) level = this.frame.stack.length;
-//       this.frame.block_stack.push(Block(type, handler, l))  //TODO (byterun/pyvm2.py line 85)
+       this.frame.block_stack.push(new vmo.Block(type, handler, level))
     }
 
-    private pop_block(): Block { return this.frame.block_stack.pop(); }
+    private pop_block(): vmo.Block {
+        if (this.frame.block_stack.length == 0) this.raise_error("pop_block(): no more blocks to pop.");
+        return this.frame.block_stack.pop();
+    }
 
-    private make_frame(code:pyo.PyCodeObject, callargs=new utils.Dict<any>(), globals?:any, locals?:any): Frame {
+    private make_frame(code:pyo.PyCodeObject, callargs=new utils.Dict<any>(), globals?:any, locals?:any): vmo.Frame {
         console.log("make frame: " + code.toString());
         var frame_globals, frame_locals;
         if (globals) {
@@ -199,12 +111,14 @@ export class VirtualMachine {
             frame_locals = frame_globals;
         }
         frame_locals.update(callargs);
-        var frame = new Frame(code, frame_globals, frame_locals, this.frame);
+        var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
+        console.log("done making frame.");
         return frame;
     }
 
     //TODO push_frame
-    private push_frame(frame:Frame): void { this.frames.push(frame);  this.frame = frame; }
+    private push_frame(frame:vmo.Frame): void { this.frames.push(frame);  this.frame = frame; }
+
     private pop_frame(): void {
         this.frames.pop();
         if (this.frames.length > 0) this.frame = this.frames[this.frames.length-1];
@@ -214,16 +128,26 @@ export class VirtualMachine {
     //TODO resume_frame
 
     public run_code(code:pyo.PyCodeObject, globals?:any, locals?:any): any {
+        console.log("running code...");
         var frame = this.make_frame(code, globals, locals);
+
         var val = this.run_frame(frame);
         if (this.frames.length > 0) throw new Error(this.ERR);
         if (this.frame && this.frame.stack.length > 0) throw new Error(this.ERR);
+        console.log("done.");
+
+        var outString = "";
+        for (var i = 0; i < this.stdout.length; i++) outString += " >> " + this.stdout[i] + " <br>";
+        console.log("RESULTS: " + outString);
+        document.getElementById("output").innerHTML = outString;
         return val
     }
 
-    private run_frame(frame:Frame): any {
+    private run_frame(frame:vmo.Frame): any {
+        console.log("running frame...");
         var INFO = this.TAG + " run_frame: ";
         this.push_frame(frame);
+
         while (true) {
             var byteinfo = this.parse_byte_and_args();
             if (byteinfo.length < 3) throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
@@ -234,9 +158,11 @@ export class VirtualMachine {
             var arg;
             if (byteinfo.length > 3) arg = byteinfo[3];
             var why = this.dispatch(byteName, byteCode, arg);
-            if (why == "exception") console.log(INFO + " why == exception (TODO)");
-            if (why == "reraise") why = "exception";
-            if (why != "yield") {
+            if (why == WHY.EXCEPTION) console.log(INFO + " why == exception (TODO)");
+            if (why == WHY.RERAISE) why = WHY.EXCEPTION;
+
+            //TODO what the hell is going on here
+            if (why != WHY.YIELD) {
                 //TODO in byterun this is while (why && frame.block_stack) but I don't know why frame.block_stack would disappear?
                 while (why && frame.block_stack.length > 0) why = this.manage_block_stack(why);
             }
@@ -244,12 +170,14 @@ export class VirtualMachine {
         }
 
         this.pop_frame();
-        //TODO handle exceptions
+
+        if (why == WHY.EXCEPTION) throw new Error(INFO + " why == exception: info: " + this.last_exception.toString());
+
         return this.returnval;
     }
 
 
-    private dispatch(byteName:string, byteCode:number, arg?:any): any {
+    private dispatch(byteName:string, byteCode:number, arg?:any): number {
         var INFO = this.TAG + " run_frame: ";
         var why;
         if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
@@ -270,9 +198,11 @@ export class VirtualMachine {
 
     /**
      *
+     *
      * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
      */
     private parse_byte_and_args(): any[] {
+        console.log("parse_byte_and_args...");
         var result = [];
         var f = this.frame;
         var offset = f.lasti;
@@ -294,40 +224,47 @@ export class VirtualMachine {
         return result;
     }
 
-    /*** for looping, handling exceptions, returning **/
-    private manage_block_stack(why:string): string {
-        var TAG = "manage_block_stack(why="+why+")";
-        if (why == "yield") throw new Error(this.ERR + " " + TAG);
+    /*** manage a frame's block stack. manipulate the block stack and data stack for looping, exception handling
+     * returning, weird stuff like that **/
+    private manage_block_stack(why:number): number {
+        var TAG = " manage_block_stack(): ";
+
+        if (why == WHY.YIELD) throw new Error(this.ERR + TAG + " why == yield at start");
+        if (this.frame.block_stack.length == 0) throw new Error(this.ERR + TAG + " no blocks left to manage?");
+
         var block = this.frame.block_stack[this.frame.block_stack.length - 1]; //pop the last thing off the current frame's block stack
-        var whyResult = why;
-        if (block.type == "loop" && why == "continue") {
+
+        if (block.type == "loop" && why == WHY.CONTINUE) {
             this.jump(this.returnval);
-            whyResult = undefined;
-            return whyResult;
+            return WHY.NONE;
         }
+
         this.pop_block();
         this.unwind_block(block);
-        if (block.type == "loop" && why == "break") {
-            whyResult = undefined;
+
+        if (block.type == "loop" && why == WHY.BREAK) {
             this.jump(block.handler);
-            return whyResult;
+            return WHY.NONE;
         }
-        if (block.type = "finally" || (block.type == "setup-except" && why == "exception") || block.type == "with") {
-            if (why == "exception") {
+
+        //byterun: if PY2 ...
+        if (block.type = "finally" || (block.type == "setup-except" && why == WHY.EXCEPTION) || block.type == "with") {
+            if (why == WHY.EXCEPTION) {
                 var etype = this.last_exception[0], value = this.last_exception[1], tb = this.last_exception[2];
                 this.push(tb); this.push(value); this.push(etype);
             } else {
-                if (why == "return" || why == "continue") this.push(this.returnval);
+                if (why == WHY.RETURN || why == WHY.CONTINUE) this.push(this.returnval);
                 this.push(why);
             }
-            whyResult = undefined;
+            why = WHY.NONE;
             this.jump(block.handler);
-            return whyResult;
+            return why;
         }
-        return whyResult;
+
+        return why; //TODO not sure why this would by anything other than WHY.NONE at this point?
     }
 
-    private unwind_block(block:Block): void {
+    private unwind_block(block:vmo.Block): void {
         var offset;
         if (block.type == "except-handler") offset = 3;
         else offset = 0;
@@ -381,7 +318,7 @@ export class VirtualMachine {
                 break;
             default:
                 throw new Error(this.ERR);
-                break;
+//                break;
         }
         var l = this.pop();
         if (!end) end = l.length;
@@ -397,28 +334,47 @@ export class VirtualMachine {
         } else this.push(l.slice(start, end));
     }
 
-    private getOp(opcode:number, arg?:any): any {
+//    private fast_block_end(why:number): void {
+//        console.log("fast_block_end...");
+//        while (why != WHY.NONE && this.frame.block_stack.length > 0) {
+//            var block = this.pop_block();
+//            //assert(why != WHY.YIELD)
+//            if (block.type == "setup-loop" && why == WHY.CONTINUE) {//
+//            }
+//        }
+//    }
+
+    private getOp(opcode:number, arg?:any): number {
         var result;
         switch (opcode) {
             case opcodes.Opcode.LOAD_CONST: this.LOAD_CONST(arg); break;
             case opcodes.Opcode.STORE_NAME: this.STORE_NAME(arg); break;
             case opcodes.Opcode.LOAD_NAME: this.LOAD_NAME(arg); break;
+
             case opcodes.Opcode.POP_TOP: this.pop(); break;
+            case opcodes.Opcode.DUP_TOP: this.DUP_TOP(); break;
             case opcodes.Opcode.ROT_TWO: this.ROT_TWO(); break;
             case opcodes.Opcode.ROT_THREE: this.ROT_THREE(); break;
+
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
+
             case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
+
             case opcodes.Opcode.JUMP_FORWARD: this.JUMP_FORWARD(arg); break;
             case opcodes.Opcode.POP_JUMP_IF_FALSE: this.POP_JUMP_IF_FALSE(arg); break;
+
             case opcodes.Opcode.PRINT_ITEM:
-                //TODO we should make some kind of "stdout" for the browser (to print to the actual HTML page)
                 var item = this.pop();
-                console.log(" >> " + item.toString());
+                this.print(item.toString());
                 break;
-            default: throw new Error("unknown opcode: " + opcode);
+            case opcodes.Opcode.PRINT_NEWLINE:
+                this.print("");
+                break;
+
+            default: throw new Error(this.ERR + "getOp(): unknown opcode: " + opcode);
         }
-        return undefined;
+        return result;
     }
 
     private LOAD_CONST(constant:any): void {
@@ -465,11 +421,12 @@ export class VirtualMachine {
         this.push(this.top());
     }
 
-    private RETURN_VALUE(): string {
+    private RETURN_VALUE(): number {
         this.returnval = this.pop();
         console.log("\tRETURN_VALUE " + this.returnval.toString());
         //TODO if self.frame.generator
-        return "return";
+        //CPython: goto fast_block_end;
+        return WHY.RETURN;
     }
 
     private MAKE_FUNCTION(arg:any): void {
@@ -481,7 +438,7 @@ export class VirtualMachine {
             defaults.push(this.pop());
         }
         var globs = this.frame.globals;
-        var fn = new Function("", code, globs, defaults, undefined, this);
+        var fn = new vmo.Function("", code, globs, defaults, undefined, this);
         this.push(fn);
     }
 
