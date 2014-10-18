@@ -216,15 +216,23 @@ export class PyList implements PyObject {
         return s;
     }
 }
-//
-//export class PyDict extends PyComplex {
-//    value: utils.Dict<any>;
-//    constructor(offset:number, value: utils.Dict<any>) {
-//        super(offset, "dict");
-//        this.value = value;
-//    }
-//    public toString(): string { return "< PyDict with " + this.value.size() + " items >"; }
-//}
+
+export class PyDict implements PyObject {
+    public value:any[];
+    public type = "dict";
+    constructor(value:any[]){
+        this.value = value;
+    }
+
+    public length(): number { return this.value.length; }
+    public toString(): string {
+        return "(PyDict)";
+//        var s = "(PyList [";
+//        for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";
+//        s += "] )";
+//        return s;
+    }
+}
 //
 //export class PyFrozenSet extends PyComplex {
 //    value:any;

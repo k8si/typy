@@ -23,7 +23,11 @@ export var BINARY_OPS = {
     //TODO rest
     SUBTRACT: function(x, y){ return x - y; },
     MULTIPLY: function(x,y){ return x * y; },
-    DIVIDE: function(x,y){return x / y ;}
+    DIVIDE: function(x,y){return x / y ;},
+    SUBSCR: function(x, y){
+        console.log("BINARY_SUBSCR: x = " + x.toString() + ", y = " + y.toString()); //+ "; x[y] = " + x[y].toString());
+        return y.get(x.value); //TODO this only really works for utils.Dict, need to make it more general
+    }
     //...
 };
 
@@ -372,12 +376,15 @@ export class VirtualMachine {
             case opcodes.Opcode.DUP_TOP: this.DUP_TOP(); break;
             case opcodes.Opcode.ROT_TWO: this.ROT_TWO(); break;
             case opcodes.Opcode.ROT_THREE: this.ROT_THREE(); break;
+            case opcodes.Opcode.STORE_SUBSCR: this.STORE_SUBSCR(); break;
 
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
             case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
 
             case opcodes.Opcode.BUILD_LIST: this.BUILD_LIST(arg); break;
+            case opcodes.Opcode.BUILD_MAP: this.BUILD_MAP(arg); break;
+
             case opcodes.Opcode.GET_ITER: this.GET_ITER(); break;
             case opcodes.Opcode.FOR_ITER: this.FOR_ITER(arg); break;
 
@@ -455,6 +462,16 @@ export class VirtualMachine {
 
     private DUP_TOP() : void{
         this.push(this.top());
+    }
+
+    private STORE_SUBSCR(): void {
+        var subscr = this.pop();
+        var obj = this.pop();
+        var val = this.pop();
+        console.log("STORE_SUBSCR : obj = " + obj.toString() + ", subscr = " + subscr.toString() + ", val = " + val.toString());
+        obj.add(subscr.value, val);
+        console.log("\t" + obj.toString());
+
     }
 
     private RETURN_VALUE(): number {
@@ -548,6 +565,11 @@ export class VirtualMachine {
         }
         items = items.reverse();
         this.push(new pyo.PyList(items));
+    }
+
+    private BUILD_MAP(numItems: number): void {
+        console.log("BUILD_MAP: with " + numItems + " items.");
+        this.push(new utils.Dict<any>());
     }
 
     private GET_ITER(): void {
