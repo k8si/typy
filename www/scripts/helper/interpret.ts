@@ -377,6 +377,8 @@ export class VirtualMachine {
             case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
 
+            case opcodes.Opcode.BUILD_LIST: this.BUILD_LIST(arg); break;
+
             case opcodes.Opcode.POP_BLOCK: this.pop_block(); break;
 
             case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
@@ -387,7 +389,7 @@ export class VirtualMachine {
 
             case opcodes.Opcode.PRINT_ITEM:
                 var item = this.pop();
-                this.print(item.value.toString());
+                this.print(item.toString());
                 break;
             case opcodes.Opcode.PRINT_NEWLINE:
                 this.print("");
@@ -534,5 +536,15 @@ export class VirtualMachine {
     private SETUP_LOOP(dest:number): void {
         console.log("SETUP_LOOP: dest = " + dest.toString());
         this.push_block("loop", dest);
+    }
+
+    private BUILD_LIST(numItems:number): void {
+        console.log("BUILD_LIST: with " + numItems + " items.");
+        var items = [];
+        for (var i = 0; i < numItems; i++) {
+            items.push(this.pop());
+        }
+        items = items.reverse();
+        this.push(new pyo.PyList(items));
     }
 }

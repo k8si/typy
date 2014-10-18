@@ -93,7 +93,7 @@ export class PyInt implements PyObject {
     constructor(value: number){
         this.value=value;
     }
-    public toString(): string { return "<PyInt "+ this.value.toString() + ">"; }
+    public toString(): string { return "(PyInt "+ this.value.toString() + ")"; }
 
 }
 
@@ -201,14 +201,19 @@ export class PyTuple implements PyObject {
     }
 }
 
-//export class PyList extends PyComplex {
-//    value:any[];
-//    constructor(offset:number, value:any[]){
-//        super(offset, "list");
-//        this.value = value;
-//    }
-//
-//}
+export class PyList implements PyObject {
+    public value:any[];
+    public type = "list";
+    constructor(value:any[]){
+        this.value = value;
+    }
+    public toString(): string {
+        var s = "(PyList [";
+        for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";
+        s += "] )";
+        return s;
+    }
+}
 //
 //export class PyDict extends PyComplex {
 //    value: utils.Dict<any>;
