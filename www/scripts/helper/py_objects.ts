@@ -329,6 +329,8 @@ export class PyCodeObject implements PyObject {
 
     public print_co_code(): void {
         console.log("--> CO_CODE <--");
+        if (this.name) console.log("name: " + this.name.toString());
+        if (this.filename) console.log("filename: " + this.filename.toString());
         if (this.firstlineno) console.log("firstlineno: " + this.firstlineno);
         if (this.lnotab) console.log("lnotab: " + this.lnotab.toString());
         if (this.varnames) console.log("varnames: " + this.varnames.toString());
@@ -341,7 +343,7 @@ export class PyCodeObject implements PyObject {
         var byteCode = this.code.toBuffer();
         for (var i = 0; i < this.code.value.length; i += 3) {
             var op = byteCode.readUInt8(i);
-            console.log("\topname: " + op.toString(16) + " " + opcodes.Opcode[op]);
+            console.log("\topname: " + op + " " + opcodes.Opcode[op]);
             if (op >= opcodes.HAVE_ARGUMENT) {
                 var nextBytes = byteCode.slice(i+1, i+2);
                 var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);

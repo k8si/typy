@@ -85,7 +85,9 @@ export class VirtualMachine {
 
     private push_block(type:any, handler?:any, level?:any): void {
         if (!level) level = this.frame.stack.length;
-       this.frame.block_stack.push(new vmo.Block(type, handler, level))
+        var block = new vmo.Block(type, handler, level);
+        console.log("push_block(): " + block.toString());
+        this.frame.block_stack.push(block);
     }
 
     private pop_block(): vmo.Block {
@@ -298,10 +300,19 @@ export class VirtualMachine {
     private inplaceOperator(op:string): void {
         var x = this.pop();
         var y = this.pop();
+        if (typeof x == "object") x = x.value;
+        if (typeof y == "object") y = y.value;
         if (op == "POWER") x = Math.pow(x, y);
         else if (op == "MULTIPLY") x = x * y;
         else if (op == "DIVIDE") x = x / y;
+        else if (op == "ADD") {
+            var s = "INPLACE_ADD: " + x + " + " + y + " -> ";
+            x = x + y;
+            s += x;
+            console.log(s);
+        }
         else throw new Error(this.ERR);
+        this.push(new pyo.PyInt(x));
         //TODO the rest of these
     }
 
@@ -363,12 +374,16 @@ export class VirtualMachine {
             case opcodes.Opcode.ROT_THREE: this.ROT_THREE(); break;
 
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
+            case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
+
+            case opcodes.Opcode.POP_BLOCK: this.pop_block(); break;
 
             case opcodes.Opcode.COMPARE_OP: this.COMPARE_OP(arg); break;
 
             case opcodes.Opcode.JUMP_FORWARD: this.JUMP_FORWARD(arg); break;
             case opcodes.Opcode.POP_JUMP_IF_FALSE: this.POP_JUMP_IF_FALSE(arg); break;
+            case opcodes.Opcode.JUMP_ABSOLUTE: this.JUMP_ABSOLUTE(arg); break;
 
             case opcodes.Opcode.PRINT_ITEM:
                 var item = this.pop();
@@ -378,13 +393,15 @@ export class VirtualMachine {
                 this.print("");
                 break;
 
-            default: throw new Error(this.ERR + "getOp(): unknown opcode: " + opcode);
+            default: this.raise_error("getOp(): unknown opcode: " + opcode);
         }
         return result;
     }
 
     private LOAD_CONST(constant:any): void {
         console.log("LOAD_CONST " + constant.toString());
+//        console.log(this.frame.frame_code_object.consts.toString());
+//        this.frame.print_stack();
         this.push(constant);
     }
 
@@ -392,7 +409,7 @@ export class VirtualMachine {
         var val = this.pop();
         console.log("STORE_NAME : assign this.frame.locals.[" + n.value.toString() + "] = " + val.toString());
         this.frame.locals.add(n.value.toString(), val);
-        console.log(this.frame.locals.toString());
+//        console.log(this.frame.locals.toString());
     }
 
     private LOAD_NAME(n:pyo.PyInterned): void {
@@ -403,7 +420,7 @@ export class VirtualMachine {
         if (frame.locals.contains(name)) {
             val = frame.locals.get(name);
             console.log("LOAD_NAME : load this.frame.locals[" + n.value.toString() + "] = " + val.toString());
-            console.log(this.frame.locals.toString());
+//            console.log(this.frame.locals.toString());
         }
         else if (frame.globals.contains(name)){
             val = frame.globals.get(name);
@@ -461,17 +478,36 @@ export class VirtualMachine {
         var y = this.pop();
         var x = this.pop();
         var result;
+        if (typeof arg == "object") arg = arg.value;
         switch (arg) {
-            case 0: result = x.value < y.value; break;
-            case 1: result = x.value <= y.value; break;
-            case 2: result = x.value == y.value; break;
-            case 3: result = x.value != y.value; break;
+            case 0:
+                result = x.value < y.value;
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " < " + y.toString() + " => " + result);
+                break;
+            case 1:
+                result = x.value <= y.value;
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " <= " + y.toString() + " => " + result);
+                break;
+            case 2:
+                result = x.value == y.value;
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " == " + y.toString() + " => " + result);
+                break;
+            case 3:
+                result = x.value != y.value;
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " != " + y.toString() + " => " + result);
+                break;
             case 4:
                 result = x.value > y.value;
-                console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " > " + y.toString() + " => " + result);
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " > " + y.toString() + " => " + result);
                 break;
-            case 5: result = x.value >= y.value; break;
-            default: break;
+            case 5:
+                result = x.value >= y.value;
+                console.log("COMPARE_OP: " + arg.toString() + " " + x.toString() + " >= " + y.toString() + " => " + result);
+                break;
+            default:
+//                console.log("\tCOMPARE_OP: NOT YET IMPLEMENTED: " + arg.toString() + " " + x.toString() + " ??? " + y.toString());
+                this.raise_error("COMPARE_OP: NOT YET IMPLEMENTED: " + arg.toString() + " " + x.toString() + " ??? " + y.toString());
+                break;
             //TODO case 6: x IS y; case 7: x IS NOT y; default: goto slow_compare
         }
 
@@ -483,9 +519,20 @@ export class VirtualMachine {
         this.jump(jump);
     }
 
+    private JUMP_ABSOLUTE(jump:number): void {
+        console.log("JUMP_ABSOLUTE " + this.frame.lasti + " --> " + jump);
+        this.jump(jump);
+    }
+
     private POP_JUMP_IF_FALSE(jump:any): void {
         var val = this.pop();
-        console.log("\tPOP_JUMP_IF_FALSE: val = " + val.toString());
+        if (val == undefined) this.raise_error("POP_JUMP_IF_FALSE: val is undefined");
+        console.log("POP_JUMP_IF_FALSE: val = " + val.toString());
         if (val == false) this.jump(jump);
+    }
+
+    private SETUP_LOOP(dest:number): void {
+        console.log("SETUP_LOOP: dest = " + dest.toString());
+        this.push_block("loop", dest);
     }
 }

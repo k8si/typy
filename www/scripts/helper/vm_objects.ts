@@ -82,6 +82,7 @@ export class Block {
     constructor(type:any, handler:any, level:any){
         this.type = type; this.handler = handler; this.level = level;
     }
+    public toString(): string { return "<Block type="+this.type.toString()+" handler="+this.handler.toString()+ " level="+this.level.toString(); }
 }
 
 //TODO finish Function class

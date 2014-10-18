@@ -43,7 +43,8 @@ export var hasJabs = [
 ];
 
 export var hasJrel = [
-    Opcode.JUMP_FORWARD
+    Opcode.JUMP_FORWARD,
+    Opcode.SETUP_LOOP
 ];
 
 /** arg = int corresponding to comparison operator (see interpet.ts COMPARE_OP) **/
