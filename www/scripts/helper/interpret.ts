@@ -176,21 +176,17 @@ export class VirtualMachine {
 
 
     private dispatch(byteName:string, byteCode:number, arg?:any): number {
-        console.log("dispatch(): " + byteName + " " + byteCode + " " + arg);
+//        console.log("dispatch(): " + byteName + " " + byteCode + " " + arg);
+//        console.log("\n - - - - - - - - - - ");
+//        console.log("dispatch(): CURRENT FRAME STACK:");
+//        this.frame.print_stack();
+//        console.log(" - - - - - - - - - - \n");
         var why;
         if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
         else if (byteName.search(/BINARY_/) == 0) this.binaryOperator(byteName.slice(7, byteName.length));
         else if (byteName.search(/INPLACE_/) == 0) this.inplaceOperator(byteName.slice(8, byteName.length));
         else if (byteName.search(/SLICE/) != -1) this.sliceOperator(byteName);
         else why = this.getOp(byteCode, arg);
-
-
-//        else {
-//            why = this.getOp(byteName, args);
-////            var bytecode_fn = this.getOp(byteName);
-////            if (!bytecode_fn) throw new Error(this.ERR);
-////            why = bytecode_fn(args);
-//        }
         return why;
     }
 
@@ -388,25 +384,34 @@ export class VirtualMachine {
     }
 
     private LOAD_CONST(constant:any): void {
-        console.log("\tLOAD_CONST " + constant.toString());
+        console.log("LOAD_CONST " + constant.toString());
         this.push(constant);
     }
 
     private STORE_NAME(n:pyo.PyInterned): void {
-        console.log("\tSTORE_NAME " + n.toString());
-        this.frame.locals.add(n.value.toString(), this.pop());
+        var val = this.pop();
+        console.log("STORE_NAME : assign this.frame.locals.[" + n.value.toString() + "] = " + val.toString());
+        this.frame.locals.add(n.value.toString(), val);
+        console.log(this.frame.locals.toString());
     }
 
     private LOAD_NAME(n:pyo.PyInterned): void {
-        console.log("\tLOAD_NAME " + n.toString());
+//        console.log("\tLOAD_NAME " + n.toString());
         var frame = this.frame;
-        var name = n.value.toString();
+        var name = n.value;
         var val;
-        if (frame.locals.contains(name)) val = frame.locals.get(name);
-        else if (frame.globals.contains(name)) val = frame.globals.get(name);
+        if (frame.locals.contains(name)) {
+            val = frame.locals.get(name);
+            console.log("LOAD_NAME : load this.frame.locals[" + n.value.toString() + "] = " + val.toString());
+            console.log(this.frame.locals.toString());
+        }
+        else if (frame.globals.contains(name)){
+            val = frame.globals.get(name);
+        }
 //TODO        else if (frame.builtins.contains(n)) val = frame.builtins.get(n);
         else throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
-        if (val) this.push(val);
+
+        this.push(val);
     }
 
     private ROT_TWO(): void {
@@ -461,16 +466,20 @@ export class VirtualMachine {
             case 1: result = x.value <= y.value; break;
             case 2: result = x.value == y.value; break;
             case 3: result = x.value != y.value; break;
-            case 4: result = x.value > y.value; break;
+            case 4:
+                result = x.value > y.value;
+                console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " > " + y.toString() + " => " + result);
+                break;
             case 5: result = x.value >= y.value; break;
             default: break;
             //TODO case 6: x IS y; case 7: x IS NOT y; default: goto slow_compare
         }
-        console.log("\tCOMPARE_OP: " + arg.toString() + " " + x.toString() + " " + y.toString() + " => " + result);
+
         this.push(result);
     }
 
     private JUMP_FORWARD(jump:number): void {
+        console.log("JUMP_FORWARD " + this.frame.lasti + " --> " + this.frame.lasti+jump);
         this.jump(jump);
     }
 

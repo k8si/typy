@@ -296,7 +296,7 @@ export class PyCodeObject implements PyObject {
     public get_byteinfo_at(i:number, lasti:number): any[] {
         var results = [];
         var byteCode = this.code.toBuffer();
-        console.log("get_byteinfo_at idx = " + i + " / " + byteCode.length);
+//        console.log("get_byteinfo_at idx = " + i + " / " + byteCode.length);
 
         if (i >= byteCode.length) {
             console.log("ERROR: PyCodeObject get_byteinfo_at(): index " + i + " out of range (len = " + byteCode.length + ")");
@@ -323,7 +323,7 @@ export class PyCodeObject implements PyObject {
             else throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
             results.push(argVal);
         }
-        console.log("done with get_byteinfo_at.");
+//        console.log("done with get_byteinfo_at.");
         return results;
     }
 

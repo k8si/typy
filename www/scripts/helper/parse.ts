@@ -50,12 +50,7 @@ export class Parser {
         return data.readUInt8(this.pc++);
     }
 
-//    private static read_short(data:Buffer): number {
-//        console.assert(Parser.pc + 2 <= data.length, Parser.PARSE_ERR);
-//        var short = data.readInt16LE(Parser.pc); //TODO verify this is actually analogous to "read_short"
-//        Parser.pc += 2;
-//        return short;
-//    }
+
 //
 //    /**
 //     * read a 64 bit two's-complement integer value ??

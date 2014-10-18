@@ -1,3 +1,6 @@
+/// <reference path="lib/node/node.d.ts" />
+/// <reference path="typings/long/long.d.ts" />
+
 /*
  Basically stolen from https://github.com/basarat/typescript-collections (because I haven't been able to get the module to work with Node)
 
@@ -34,8 +37,12 @@ export class Dict<V> {
 
     // FIXME should throw exception if we try to add a key that's already in the dict
     add(key: string, value: V): void {
-        this._keys.push(key);
-        this._values.push(value);
+        var idx = this._keys.indexOf(key);
+        if (idx >= 0) this._values[idx] = value;
+        else {
+            this._keys.push(key);
+            this._values.push(value);
+        }
     }
 
     remove(key: string): void {
@@ -70,6 +77,20 @@ export class Dict<V> {
         for (var i = 0; i < k.length; i++) {
             this.add(k[i], v[i]);
         }
+    }
+
+    public toString(): string {
+        var s = "<Dict ";
+        var vals = this.values();
+        var keys = this.keys();
+        if (vals.length != keys.length) throw new Error("DICT ERROR, vals != keys");
+        for (var i = 0; i < keys.length; i++) {
+            s += " [ " + keys[i].toString() + " ] = "; //+ vals[i].toString() + "\n";
+            if (vals[i]) s += vals[i].toString() + "\n";
+            else s += "undefined" + "\n";
+        }
+        s += ">";
+        return s;
     }
 }
 

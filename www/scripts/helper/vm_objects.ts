@@ -45,6 +45,16 @@ export class Frame {
         this.generator = undefined; //TODO
     }
     public toString(): string { return "<Frame " + this.frame_code_object.filename + " " + this.lineno; }
+
+    public print_stack(): void {
+        if (this.stack.length == 0) console.log("<EMPTY>");
+        else {
+            for (var i = 0; i < this.stack.length; i++) {
+                console.log("@" + i + " : " + this.stack[i].toString());
+            }
+        }
+    }
+
     public lineNumber(): number {
         var lnotab = this.frame_code_object.lnotab;
         var byte_increments = [];
