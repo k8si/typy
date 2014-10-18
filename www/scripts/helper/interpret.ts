@@ -71,12 +71,12 @@ export class VirtualMachine {
     /** push a frame onto the top of the call stack **/
     private push(val: any): void { this.frame.stack.push(val); }
 
-//    private popn(n: number): Array<any> {
-//        console.assert(n < this.frame.stack.length, "ArrayIndex out of bounds");
-//        var result = [];
-//        for (var i = 0; i < n; i++) result.push(this.frame.stack.pop());
-//        return result;
-//    }
+    private popn(n: number): Array<any> {
+        if (n >= this.frame.stack.length) this.raise_error("popn: n="+n+" frame stack index out of bounds");
+        var result = [];
+        for (var i = 0; i < n; i++) result.push(this.frame.stack.pop());
+        return result;
+    }
 
     //TODO public peek(i:number)
 
@@ -112,7 +112,6 @@ export class VirtualMachine {
         }
         frame_locals.update(callargs);
         var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
-        console.log("done making frame.");
         return frame;
     }
 
@@ -145,20 +144,19 @@ export class VirtualMachine {
 
     private run_frame(frame:vmo.Frame): any {
         console.log("running frame...");
-        var INFO = this.TAG + " run_frame: ";
         this.push_frame(frame);
 
         while (true) {
             var byteinfo = this.parse_byte_and_args();
             if (byteinfo.length < 3) throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
-            console.log(INFO + " doing " + byteinfo.toString());
+//            console.log(INFO + " doing " + byteinfo.toString());
             var byteName = byteinfo[0];
             var byteCode = byteinfo[1];
             var offset = byteinfo[2];
             var arg;
             if (byteinfo.length > 3) arg = byteinfo[3];
             var why = this.dispatch(byteName, byteCode, arg);
-            if (why == WHY.EXCEPTION) console.log(INFO + " why == exception (TODO)");
+            if (why == WHY.EXCEPTION) console.log("run_frame(): why == exception (TODO)");
             if (why == WHY.RERAISE) why = WHY.EXCEPTION;
 
             //TODO what the hell is going on here
@@ -171,14 +169,14 @@ export class VirtualMachine {
 
         this.pop_frame();
 
-        if (why == WHY.EXCEPTION) throw new Error(INFO + " why == exception: info: " + this.last_exception.toString());
+        if (why == WHY.EXCEPTION) this.raise_error("run_frame(): why == exception: info: " + this.last_exception.toString());
 
         return this.returnval;
     }
 
 
     private dispatch(byteName:string, byteCode:number, arg?:any): number {
-        var INFO = this.TAG + " run_frame: ";
+        console.log("dispatch(): " + byteName + " " + byteCode + " " + arg);
         var why;
         if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
         else if (byteName.search(/BINARY_/) == 0) this.binaryOperator(byteName.slice(7, byteName.length));
@@ -202,26 +200,38 @@ export class VirtualMachine {
      * @returns {Array} = [opcode_name, opcode_number, offset, arg if there is one]
      */
     private parse_byte_and_args(): any[] {
-        console.log("parse_byte_and_args...");
-        var result = [];
+        var results = [];
         var f = this.frame;
-        var offset = f.lasti;
+        var byteCode = f.frame_code_object.code.toBuffer();
+        var op_offset = f.lasti;
+        var op_code = f.frame_code_object.code.toBuffer().readUInt8(op_offset);
         f.lasti++;
-        var byteInfo = f.frame_code_object.get_byteinfo_at(offset, f.lasti);
-        if (byteInfo.length < 2) throw new Error(this.ERR);
-        var byteName = byteInfo[0];
-        var byteCode = byteInfo[1];
-        result.push(byteName);
-        result.push(byteCode);
-        result.push(offset);
+        var op_name = opcodes.Opcode[op_code];
+        results.push(op_name);
+        results.push(op_code);
+        results.push(op_offset);
         var arg;
-        if (byteInfo.length >= 3) {
-            arg = byteInfo[2];
-            result.push(arg);
+        if (op_code >= opcodes.HAVE_ARGUMENT) {
+            var intArg = utils.read_short(byteCode, f.lasti);
             f.lasti += 2;
+            if (utils.contains(opcodes.hasArgInConsts, op_code)) {
+                arg = f.frame_code_object.consts.get(intArg);
+            } else if (utils.contains(opcodes.hasArgInNames, op_code)) {
+                arg = f.frame_code_object.names.get(intArg);
+            } else if (utils.contains(opcodes.hasJrel, op_code)) {
+                arg = f.lasti + intArg;
+            } else if (utils.contains(opcodes.hasJabs, op_code)) {
+                arg = intArg;
+            } else if (utils.contains(opcodes.hasArgInLocals, op_code)) {
+                arg = f.frame_code_object.varnames.get(intArg);
+            } else if (utils.contains(opcodes.hasFree, op_code)) {
+                this.raise_error("parse_byte_and_args(): args in FREE not yet implemented.");
+            } else {
+                arg = intArg;
+            }
+            if (arg) results.push(arg);
         }
-
-        return result;
+        return results;
     }
 
     /*** manage a frame's block stack. manipulate the block stack and data stack for looping, exception handling
@@ -366,7 +376,7 @@ export class VirtualMachine {
 
             case opcodes.Opcode.PRINT_ITEM:
                 var item = this.pop();
-                this.print(item.toString());
+                this.print(item.value.toString());
                 break;
             case opcodes.Opcode.PRINT_NEWLINE:
                 this.print("");
@@ -467,6 +477,6 @@ export class VirtualMachine {
     private POP_JUMP_IF_FALSE(jump:any): void {
         var val = this.pop();
         console.log("\tPOP_JUMP_IF_FALSE: val = " + val.toString());
-        if (!val) this.jump(jump);
+        if (val == false) this.jump(jump);
     }
 }

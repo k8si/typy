@@ -1,7 +1,7 @@
 /*
-Basically stolen from https://github.com/basarat/typescript-collections (because I haven't been able to get the module to work with Node)
+ Basically stolen from https://github.com/basarat/typescript-collections (because I haven't been able to get the module to work with Node)
 
-TODO if we're actually gonna use any of these, need to catch errors, test, etc.
+ TODO if we're actually gonna use any of these, need to catch errors, test, etc.
  */
 
 //interface IDict {
@@ -13,6 +13,15 @@ TODO if we're actually gonna use any of these, need to catch errors, test, etc.
 //    get(key: string): any;
 //    size(): number;
 //}
+
+export function contains(list:any[], item:any): boolean {
+    return list.indexOf(item) >= 0;
+}
+
+export function read_short(data:Buffer, offset:number): number {
+    console.assert(offset + 2 <= data.length);
+    return data.readInt16LE(offset); //TODO verify this is actually analogous to "read_short"
+}
 
 export class Dict<V> {
     _keys: Array<string>;
