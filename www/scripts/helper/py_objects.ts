@@ -207,6 +207,8 @@ export class PyList implements PyObject {
     constructor(value:any[]){
         this.value = value;
     }
+
+    public length(): number { return this.value.length; }
     public toString(): string {
         var s = "(PyList [";
         for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";

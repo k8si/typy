@@ -44,6 +44,7 @@ export var hasJabs = [
 
 export var hasJrel = [
     Opcode.JUMP_FORWARD,
+    Opcode.FOR_ITER,
     Opcode.SETUP_LOOP
 ];
 

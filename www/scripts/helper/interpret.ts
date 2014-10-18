@@ -378,6 +378,8 @@ export class VirtualMachine {
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
 
             case opcodes.Opcode.BUILD_LIST: this.BUILD_LIST(arg); break;
+            case opcodes.Opcode.GET_ITER: this.GET_ITER(); break;
+            case opcodes.Opcode.FOR_ITER: this.FOR_ITER(arg); break;
 
             case opcodes.Opcode.POP_BLOCK: this.pop_block(); break;
 
@@ -546,5 +548,27 @@ export class VirtualMachine {
         }
         items = items.reverse();
         this.push(new pyo.PyList(items));
+    }
+
+    private GET_ITER(): void {
+        var l = this.pop();
+        console.log("GET_ITER for " + l.toString());
+        var iter = new vmo.ListIterator(l);
+        this.push(iter);
+    }
+
+    private FOR_ITER(jump: number): void {
+        console.log("FOR_ITER");
+        var iter = this.top();
+        var v;
+        if (iter.hasNext()) {
+            v = iter.next();
+            this.push(v);
+        } else {
+            this.pop();
+            this.jump(jump);
+        }
+
+
     }
 }

@@ -1,6 +1,24 @@
 import pyo = require('./py_objects');
 import utils = require('./utils')
 
+export class ListIterator {
+    private list: pyo.PyList;
+    private currIdx: number;
+    constructor(list:pyo.PyList) {
+        this.list = list;
+        this.currIdx = 0;
+    }
+    public hasNext(): boolean { return this.currIdx < this.list.length(); }
+    public next(): any {
+        var ret;
+        if (this.hasNext()) {
+            ret = this.list.value[this.currIdx];
+            this.currIdx++;
+            return ret;
+        } else throw new Error("ListIteratorError: no next item");
+    }
+}
+
 export class Frame {
     frame_code_object: pyo.PyCodeObject;
     globals: utils.Dict<any>;//any; // TODO should be Dict ?
