@@ -1,5 +1,24 @@
 import pyo = require('./py_objects');
 import utils = require('./utils')
+import bi = require('./builtins');
+
+export class ListIterator {
+    private list: pyo.PyList;
+    private currIdx: number;
+    constructor(list:pyo.PyList) {
+        this.list = list;
+        this.currIdx = 0;
+    }
+    public hasNext(): boolean { return this.currIdx < this.list.length(); }
+    public next(): any {
+        var ret;
+        if (this.hasNext()) {
+            ret = this.list.value[this.currIdx];
+            this.currIdx++;
+            return ret;
+        } else throw new Error("ListIteratorError: no next item");
+    }
+}
 
 export class Frame {
     frame_code_object: pyo.PyCodeObject;
@@ -7,7 +26,7 @@ export class Frame {
     locals: utils.Dict<any>; //any; // TODO should be Dict ?
     back: Frame;
     stack: any[]; //TODO a stack of what?
-    builtins: any[];
+    builtins: any;
     lineno: number;
     lasti: number; //index of the last instruction executed
     cells: utils.Dict<any>;
@@ -22,6 +41,9 @@ export class Frame {
         this.back = back;
 
         if (back) this.builtins = back.builtins;
+        else {
+            this.builtins = bi.builtins;
+        }
 
         //TODO else { this.builtins = locals['__builtins__'] ...} (byterun/pyobj.py line 147)
         this.lineno = code.firstlineno;

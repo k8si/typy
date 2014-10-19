@@ -5,6 +5,7 @@ import pyo = require("./py_objects");
 import utils = require("./utils");
 import opcodes = require('./opcodes');
 import vmo = require('./vm_objects');
+import bi = require('./builtins');
 
 
 //TODO test everything
@@ -23,7 +24,11 @@ export var BINARY_OPS = {
     //TODO rest
     SUBTRACT: function(x, y){ return x - y; },
     MULTIPLY: function(x,y){ return x * y; },
-    DIVIDE: function(x,y){return x / y ;}
+    DIVIDE: function(x,y){return x / y ;},
+    SUBSCR: function(x, y){
+        console.log("BINARY_SUBSCR: x = " + x.toString() + ", y = " + y.toString()); //+ "; x[y] = " + x[y].toString());
+        return y.get(x.value); //TODO this only really works for utils.Dict, need to make it more general
+    }
     //...
 };
 
@@ -51,7 +56,11 @@ export class VirtualMachine {
 
     private raise_error(msg:string): void {
         console.log(this.ERR + " " + msg);
+
         this.frame.frame_code_object.print_co_code();
+
+        console.log("CURRENT FRAME STACK:");
+        this.frame.print_stack();
         throw new Error(this.ERR + " " + msg)
     }
 
@@ -100,16 +109,16 @@ export class VirtualMachine {
         var frame_globals, frame_locals;
         if (globals) {
             frame_globals = globals;
-            if (locals) frame_locals = globals;
+            if (!locals) frame_locals = globals;
         } else if (this.frame) { //TODO "if (this.frame)" instead of this.frames?? bug in byterun??
             frame_globals = this.frame.globals;
             frame_locals = new utils.Dict<any>();
         } else {
             frame_globals = new utils.Dict<any>();
-            frame_globals.add("__builtins__", "NOTYETIMPLEMENTED");
-            frame_globals.add("__name__", "__main__");
-            frame_globals.add("__doc__", undefined);
-            frame_globals.add("__package__", undefined);
+            frame_globals.add("__builtins__", bi.builtins);
+            frame_globals.add("__name__", new pyo.PyString(new Buffer("__main__")));
+            frame_globals.add("__doc__", new pyo.PyNone());
+            frame_globals.add("__package__", new pyo.PyNone());
             frame_locals = frame_globals;
         }
         frame_locals.update(callargs);
@@ -213,7 +222,8 @@ export class VirtualMachine {
             var intArg = utils.read_short(byteCode, f.lasti);
             f.lasti += 2;
             if (utils.contains(opcodes.hasArgInConsts, op_code)) {
-                arg = f.frame_code_object.consts.get(intArg);
+                if (f.frame_code_object.consts.type == "stopiter") arg = f.frame_code_object.consts;
+                else arg = f.frame_code_object.consts.get(intArg);
             } else if (utils.contains(opcodes.hasArgInNames, op_code)) {
                 arg = f.frame_code_object.names.get(intArg);
             } else if (utils.contains(opcodes.hasJrel, op_code)) {
@@ -372,10 +382,17 @@ export class VirtualMachine {
             case opcodes.Opcode.DUP_TOP: this.DUP_TOP(); break;
             case opcodes.Opcode.ROT_TWO: this.ROT_TWO(); break;
             case opcodes.Opcode.ROT_THREE: this.ROT_THREE(); break;
+            case opcodes.Opcode.STORE_SUBSCR: this.STORE_SUBSCR(); break;
 
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
             case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
+
+            case opcodes.Opcode.BUILD_LIST: this.BUILD_LIST(arg); break;
+            case opcodes.Opcode.BUILD_MAP: this.BUILD_MAP(arg); break;
+
+            case opcodes.Opcode.GET_ITER: this.GET_ITER(); break;
+            case opcodes.Opcode.FOR_ITER: this.FOR_ITER(arg); break;
 
             case opcodes.Opcode.POP_BLOCK: this.pop_block(); break;
 
@@ -387,7 +404,7 @@ export class VirtualMachine {
 
             case opcodes.Opcode.PRINT_ITEM:
                 var item = this.pop();
-                this.print(item.value.toString());
+                this.print(item.toString());
                 break;
             case opcodes.Opcode.PRINT_NEWLINE:
                 this.print("");
@@ -425,8 +442,12 @@ export class VirtualMachine {
         else if (frame.globals.contains(name)){
             val = frame.globals.get(name);
         }
-//TODO        else if (frame.builtins.contains(n)) val = frame.builtins.get(n);
-        else throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
+        else if (name in bi.builtins){
+            console.log("LOAD_NAME : load builtins[" + n.value.toString() + "]");
+            val = bi[name];
+        }
+
+        else this.raise_error(" LOAD_NAME on " + n.toString());
 
         this.push(val);
     }
@@ -451,6 +472,16 @@ export class VirtualMachine {
 
     private DUP_TOP() : void{
         this.push(this.top());
+    }
+
+    private STORE_SUBSCR(): void {
+        var subscr = this.pop();
+        var obj = this.pop();
+        var val = this.pop();
+        console.log("STORE_SUBSCR : obj = " + obj.toString() + ", subscr = " + subscr.toString() + ", val = " + val.toString());
+        obj.add(subscr.value, val);
+        console.log("\t" + obj.toString());
+
     }
 
     private RETURN_VALUE(): number {
@@ -534,5 +565,42 @@ export class VirtualMachine {
     private SETUP_LOOP(dest:number): void {
         console.log("SETUP_LOOP: dest = " + dest.toString());
         this.push_block("loop", dest);
+    }
+
+    private BUILD_LIST(numItems:number): void {
+        console.log("BUILD_LIST: with " + numItems + " items.");
+        var items = [];
+        for (var i = 0; i < numItems; i++) {
+            items.push(this.pop());
+        }
+        items = items.reverse();
+        this.push(new pyo.PyList(items));
+    }
+
+    private BUILD_MAP(numItems: number): void {
+        console.log("BUILD_MAP: with " + numItems + " items.");
+        this.push(new utils.Dict<any>());
+    }
+
+    private GET_ITER(): void {
+        var l = this.pop();
+        console.log("GET_ITER for " + l.toString());
+        var iter = new vmo.ListIterator(l);
+        this.push(iter);
+    }
+
+    private FOR_ITER(jump: number): void {
+        console.log("FOR_ITER");
+        var iter = this.top();
+        var v;
+        if (iter.hasNext()) {
+            v = iter.next();
+            this.push(v);
+        } else {
+            this.pop();
+            this.jump(jump);
+        }
+
+
     }
 }

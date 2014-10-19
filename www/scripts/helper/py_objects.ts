@@ -88,12 +88,12 @@ export class PyFalse implements PyObject {
 //}
 
 export class PyInt implements PyObject {
-    public value:number;
+    public value: number;
     public type = "int";
     constructor(value: number){
         this.value=value;
     }
-    public toString(): string { return "<PyInt "+ this.value.toString() + ">"; }
+    public toString(): string { return "(PyInt "+ this.value.toString() + ")"; }
 
 }
 
@@ -201,23 +201,44 @@ export class PyTuple implements PyObject {
     }
 }
 
-//export class PyList extends PyComplex {
-//    value:any[];
-//    constructor(offset:number, value:any[]){
-//        super(offset, "list");
-//        this.value = value;
-//    }
-//
-//}
-//
-//export class PyDict extends PyComplex {
-//    value: utils.Dict<any>;
-//    constructor(offset:number, value: utils.Dict<any>) {
-//        super(offset, "dict");
-//        this.value = value;
-//    }
-//    public toString(): string { return "< PyDict with " + this.value.size() + " items >"; }
-//}
+export class PyList implements PyObject {
+    public value:any[];
+    public type = "list";
+    constructor(value:any[]){
+        this.value = value;
+    }
+
+    public length(): number { return this.value.length; }
+
+    public get(idx:number): any {
+        if (idx >= 0 && idx < this.value.length) return this.value[idx];
+        else return null;
+    }
+
+    public toString(): string {
+        var s = "(PyList [";
+        for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";
+        s += "] )";
+        return s;
+    }
+}
+
+export class PyDict implements PyObject {
+    public value:any[];
+    public type = "dict";
+    constructor(value:any[]){
+        this.value = value;
+    }
+
+    public length(): number { return this.value.length; }
+    public toString(): string {
+        return "(PyDict)";
+//        var s = "(PyList [";
+//        for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";
+//        s += "] )";
+//        return s;
+    }
+}
 //
 //export class PyFrozenSet extends PyComplex {
 //    value:any;
@@ -232,19 +253,23 @@ export class PyTuple implements PyObject {
 export class PyCodeObject implements PyObject {
     public value = "code-object";
     public type = "code-object";
+
     argcount:number;
     nlocals:number;
     stacksize:number;
     flags:number;
+
     code:PyString;
+
     consts:PyTuple;
     names:PyTuple;
     varnames:PyTuple;
     freevars:PyTuple; //TODO what is this for?
-    public cellvars:PyTuple; //TODO what is this for?
+    cellvars:PyTuple; //TODO what is this for?
+
     filename:PyString;
     name:any;
-    public firstlineno:number;
+    firstlineno:number;
     lnotab:any;
 
     constructor(offset:number,
@@ -253,11 +278,13 @@ export class PyCodeObject implements PyObject {
                 stacksize:number,
                 flags:number,
                 code:PyString,
+
                 consts:PyTuple,
                 names:PyTuple,
                 varnames:PyTuple,
                 freevars:PyTuple,
                 cellvars:PyTuple,
+
                 filename:PyString, //string or PyString?
                 name:any,
                 firstlineno:number,
@@ -281,10 +308,10 @@ export class PyCodeObject implements PyObject {
     }
 
     public toString(): string {
-        var info = "<PyCodeObject argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags;
+        var info = "<PyCodeObject argcount:"+this.argcount + " nlocals:" + this.nlocals + " stacksize:" + this.stacksize + " flags:" + this.flags + "\n";
         if (this.names) info += "names: " + this.names.toString() + " \n";
         if (this.consts) info += "consts: " + this.consts.toString() + " \n";
-        if (this.varnames) info += "locals: " + this.consts.toString() + " \n";
+        if (this.varnames) info += "locals: " + this.varnames.toString() + " \n";
         return info;
     }
 
@@ -350,7 +377,8 @@ export class PyCodeObject implements PyObject {
                 if (this.contains(opcodes.hasArgInNames, op)) {
                     console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
                 } else if (this.contains(opcodes.hasArgInConsts, op)) {
-                    console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                    if (this.consts.type == "stopiter") console.log("\t\targ: consts @ " + idx + " : " + this.consts.toString());
+                    else console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
                 } else if (this.contains(opcodes.hasArgInLocals, op)) {
                     console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
                 } else if (this.contains(opcodes.hasJrel, op)) {
