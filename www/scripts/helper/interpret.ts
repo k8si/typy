@@ -5,6 +5,7 @@ import pyo = require("./py_objects");
 import utils = require("./utils");
 import opcodes = require('./opcodes');
 import vmo = require('./vm_objects');
+import bi = require('./builtins');
 
 
 //TODO test everything
@@ -55,7 +56,11 @@ export class VirtualMachine {
 
     private raise_error(msg:string): void {
         console.log(this.ERR + " " + msg);
+
         this.frame.frame_code_object.print_co_code();
+
+        console.log("CURRENT FRAME STACK:");
+        this.frame.print_stack();
         throw new Error(this.ERR + " " + msg)
     }
 
@@ -104,16 +109,16 @@ export class VirtualMachine {
         var frame_globals, frame_locals;
         if (globals) {
             frame_globals = globals;
-            if (locals) frame_locals = globals;
+            if (!locals) frame_locals = globals;
         } else if (this.frame) { //TODO "if (this.frame)" instead of this.frames?? bug in byterun??
             frame_globals = this.frame.globals;
             frame_locals = new utils.Dict<any>();
         } else {
             frame_globals = new utils.Dict<any>();
-            frame_globals.add("__builtins__", "NOTYETIMPLEMENTED");
-            frame_globals.add("__name__", "__main__");
-            frame_globals.add("__doc__", undefined);
-            frame_globals.add("__package__", undefined);
+            frame_globals.add("__builtins__", bi.builtins);
+            frame_globals.add("__name__", new pyo.PyString(new Buffer("__main__")));
+            frame_globals.add("__doc__", new pyo.PyNone());
+            frame_globals.add("__package__", new pyo.PyNone());
             frame_locals = frame_globals;
         }
         frame_locals.update(callargs);
@@ -217,7 +222,8 @@ export class VirtualMachine {
             var intArg = utils.read_short(byteCode, f.lasti);
             f.lasti += 2;
             if (utils.contains(opcodes.hasArgInConsts, op_code)) {
-                arg = f.frame_code_object.consts.get(intArg);
+                if (f.frame_code_object.consts.type == "stopiter") arg = f.frame_code_object.consts;
+                else arg = f.frame_code_object.consts.get(intArg);
             } else if (utils.contains(opcodes.hasArgInNames, op_code)) {
                 arg = f.frame_code_object.names.get(intArg);
             } else if (utils.contains(opcodes.hasJrel, op_code)) {
@@ -436,8 +442,12 @@ export class VirtualMachine {
         else if (frame.globals.contains(name)){
             val = frame.globals.get(name);
         }
-//TODO        else if (frame.builtins.contains(n)) val = frame.builtins.get(n);
-        else throw new Error(this.ERR + " LOAD_NAME on " + n.toString());
+        else if (name in bi.builtins){
+            console.log("LOAD_NAME : load builtins[" + n.value.toString() + "]");
+            val = bi[name];
+        }
+
+        else this.raise_error(" LOAD_NAME on " + n.toString());
 
         this.push(val);
     }

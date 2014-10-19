@@ -18,6 +18,12 @@ import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/
 /*
  TODO verify the little/big endian-ness of things
  TODO float vs long?
+
+
+ ---> !!!! TODO there's something wrong with negative numbers e.g. a = [1, 2, 3]; print a[-1] <-----
+
+
+
  */
 
 export class Parser {
@@ -81,9 +87,9 @@ export class Parser {
 //
     private read_long(data:Buffer): number {
         if (this.pc + 4 > data.length) throw new Error("parsing error");
-        var long = data.readInt32LE(this.pc);
+        var longval = data.readInt32LE(this.pc);
         this.pc += 4;
-        return long;
+        return longval;
     }
 
     private read_unsigned_long(data:Buffer): number {
@@ -111,13 +117,15 @@ export class Parser {
 //
     private read_tuple(data:Buffer): any[] {
         var n = this.read_long(data);
-//        console.log("got tuple of len " + n + ": ");
+        console.log("\tgot tuple of len " + n + ": ");
         console.assert(n >= 0, this.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
+//            console.log("\tread tuple: reading thing @ idx " + i + "...");
             var o = this.read_object(data);
+            console.log("\t...got : " + o.toString());
+//            a.push(o);
             a.push(o);
-//            a.push(Parser.read_object(data));
         }
 //        for (var i = 0; i < n; i++) {
 //            if (a[i]) console.log("\t" + a[i].toString());
@@ -157,7 +165,7 @@ export class Parser {
 //        console.log(typeof data);
 //        var byte = 0;
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
-//        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
+        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
         var offset = this.pc; //for bookkeeping
         this.pc++;
         var tm = this.type_map;
@@ -202,15 +210,17 @@ export class Parser {
 
             case tm.BINARY_FLOAT:
 //                console.log("found binary_float");
-                return undefined; //TODO
+                return new pyo.PyFloat(this.read_float(data));
 
             case tm.COMPLEX: //TODO
 //                console.log("found complex");
-                return undefined;
+//                return undefined;
+                throw new Error("complex not yet implemented.");
 
             case tm.BINARY_COMPLEX:
 //                console.log("found binary_complex");
-                return undefined; //TODO
+//                return undefined; //TODO
+                throw new Error("complex not yet implemented");
 
             case tm.INTERNED:
 //                console.log("found interned @ " + offset);
@@ -278,21 +288,29 @@ export class Parser {
                 var firstlineno = this.read_long(data);
                 var lnotab = this.read_long(data);
 
+                /*
+                 consts:PyTuple,
+                 names:PyTuple,
+                 varnames:PyTuple,
+                 freevars:PyTuple,
+                 cellvars:PyTuple,
+                 */
                 var obj = new pyo.PyCodeObject(offset, //offset
                     argcount, nlocals, stacksize, flags,
-                    code, consts, names, varnames,
-                    freevars, cellvars, filename, name,
+                    code,
+                    consts, names, varnames, freevars, cellvars,
+                    filename, name,
                     firstlineno, lnotab
                 );
 
-//                console.log(obj.toString());
-//                obj.print_co_code();
+                console.log(obj.toString());
+                obj.print_co_code();
 //                obj.parse_co_code();
 
                 return obj;
 
             default:
-                console.log('unknown type');
+                console.log('unknown type ' + byte + ' ' + String.fromCharCode(byte));
                 throw new Error("parse.ts: not yet implemented");
 //                return undefined;
         }

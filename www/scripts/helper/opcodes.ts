@@ -56,25 +56,25 @@ export var hasFree = [
 ];
 
 /* OTHER:
-arg = number of sequence items:
-UNPACK_SEQUENCE
-FOR_ITER
-LIST_APPEND
+ arg = number of sequence items:
+ UNPACK_SEQUENCE
+ FOR_ITER
+ LIST_APPEND
 
-arg = number of items to duplicate:
-DUP_TOPX
+ arg = number of items to duplicate:
+ DUP_TOPX
 
-arg = number of tuple tiems
-BUILD_TUPLE
+ arg = number of tuple tiems
+ BUILD_TUPLE
 
-arg = number of list items
-BUILD_LIST
+ arg = number of list items
+ BUILD_LIST
 
-arg = number of set items
-BUILD_SET
+ arg = number of set items
+ BUILD_SET
 
-arg = "always zero for now"
-BUILD_MAP
+ arg = "always zero for now"
+ BUILD_MAP
 
 
  */
@@ -200,26 +200,28 @@ export enum Opcode {
 
 //TODO what about regular Sets (not Frozensets)?
 export enum TypeMap {
-    NULL = 79,
-    NONE = 78,
-    FALSE = 70,
-    TRUE = 84,
-    STOPITER = 83,
-    ELLIPSIS = 46,
-    INT = 105,
-    INT64 = 73,
-    FLOAT = 102,
-    BINARY_FLOAT = 103,
-    COMPLEX = 120,
-    BINARY_COMPLEX = 121,
-    LONG = 108,
-    STRING = 115,
-    INTERNED = 116,
-    STRINGREF = 82,
-    UNICODE = 117,
-    TUPLE = 40, // '('
-    LIST = 91,
-    DICT = 123,
-    FROZENSET = 62,
-    CODE = 99 // 'c'
+    NULL = 79,          //'O'
+    NONE = 78,         //'N'
+    FALSE = 70,        //'F'
+    TRUE = 84,         // 'T'
+    STOPITER = 83,     // 'S'
+    ELLIPSIS = 46,     // '.'
+    INT = 105,        //'i'
+    INT64 = 73,       // 'I'
+    FLOAT = 102, //'f'
+    BINARY_FLOAT = 103,   // 'g'
+    COMPLEX = 120,  // 'x'
+    BINARY_COMPLEX = 121, // 'y'
+    LONG = 108,     // 'l'
+    STRING = 115,   // 's'
+    INTERNED = 116, // 't'
+    STRINGREF = 82, // 'R'
+    UNICODE = 117,  // 'u'
+    TUPLE = 40,     // '('
+    LIST = 91,      // '['
+    DICT = 123,     // '{'
+    SET = 60,       // '<'
+    FROZENSET = 62, // '>'
+    CODE = 99,      // 'c'
+    UNKNOWN = 63    // '?'
 };

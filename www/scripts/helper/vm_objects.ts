@@ -1,5 +1,6 @@
 import pyo = require('./py_objects');
 import utils = require('./utils')
+import bi = require('./builtins');
 
 export class ListIterator {
     private list: pyo.PyList;
@@ -25,7 +26,7 @@ export class Frame {
     locals: utils.Dict<any>; //any; // TODO should be Dict ?
     back: Frame;
     stack: any[]; //TODO a stack of what?
-    builtins: any[];
+    builtins: any;
     lineno: number;
     lasti: number; //index of the last instruction executed
     cells: utils.Dict<any>;
@@ -40,6 +41,9 @@ export class Frame {
         this.back = back;
 
         if (back) this.builtins = back.builtins;
+        else {
+            this.builtins = bi.builtins;
+        }
 
         //TODO else { this.builtins = locals['__builtins__'] ...} (byterun/pyobj.py line 147)
         this.lineno = code.firstlineno;
