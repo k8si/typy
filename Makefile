@@ -7,7 +7,7 @@ ROOT = www/scripts/helper/
 .ts.js:
 	$(TSC) $(FLAGS) $*.ts
 
-CLASSES = $(ROOT)interpret.ts $(ROOT)opcodes.ts $(ROOT)parse.ts $(ROOT)py_objects.ts $(ROOT)utils.ts
+CLASSES = $(ROOT)interpret.ts $(ROOT)opcodes.ts $(ROOT)parse.ts $(ROOT)py_objects.ts $(ROOT)utils.ts $(ROOT)vm_objects.ts $(ROOT)builtins.ts www/scripts/tests/test_suite.ts
 
 default: classes
 
