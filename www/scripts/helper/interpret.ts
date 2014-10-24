@@ -149,7 +149,7 @@ export class VirtualMachine {
         var outString = "";
         for (var i = 0; i < this.stdout.length; i++) outString += " >> " + this.stdout[i] + " <br>";
         console.log("RESULTS: " + outString);
-        document.getElementById("output").innerHTML = outString;
+        document.getElementById("output").innerHTML += "<br>" + outString;
         return val
     }
 

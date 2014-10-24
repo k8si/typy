@@ -2,43 +2,37 @@
 
 import parse = require("../helper/parse");
 
-//TODO write more tests
+//TODO write more tests, bring more structure into vm/parser output to test for certain properties
 //TODO use object of functions instead of if-clauses+string matching?
+// --> HIGH PRIORITY TODO the whole CORS thing apparently doesnt work on Chrome (but there may be a workaround)
+
+
+//all of these separate test fxns seem unecessary right now but I think they will be more necessary once we
+// start testing specific properties of the output...?
+export var TestDict = {
+    "http://localhost:3000/data/test_if.pyc": function (data) {
+        var parser = new parse.Parser("test_if.pyc", 0); //TODO probably no reason to keep creating a new parser object each time
+        return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_for_loop.pyc": function (data) {
+        var parser = new parse.Parser("test_for_loop.pyc", 0);
+        return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_while_loop.pyc": function (data) {
+        var parser = new parse.Parser("test_while_loop.pyc", 0);
+        return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_list.pyc": function (data) {
+        var parser = new parse.Parser("test_list.pyc", 0);
+        return parser.parse(data);
+    }
+};
 
 export class TestSuite {
     constructor(){ }
-
     public test(filename: string, data: any): number {
         console.log("testing on " + filename);
-        //TODO just need to simplify to end of path
-        if (filename == "http://localhost:3000/data/test_if.pyc") {
-            console.log("got test: TEST_IF");
-            var result = this.test_if(data); //TODO streamline "result" coordination, parser should just return 0 if success e.g.
-            if (result) return 0;
-            return 1;
-        } else if (filename == "http://localhost:3000/data/test_for_loop.pyc") {
-            console.log("got test: TEST_FOR_LOOP");
-            var result = this.test_for_loop(data);
-            if (result) return 0;
-            return 1;
-        }
+        if (filename in TestDict) return TestDict[filename](data);
         return 1; //"0 for success"
     }
-
-    private test_for_loop(data: any): boolean {
-        var passed = true;
-//        var parser = new parse.Parser("test_for_loop.pyc", 0);
-//        var result = parser.parse(data);
-//        if (result != 0) return false;
-        return false;
-    }
-
-    private test_if(data: any): boolean {
-        var passed = true;
-        var parser = new parse.Parser("test_if.pyc", 0);
-        var result = parser.parse(data);
-        if (result != 0) return false;
-        return true;
-    }
-
 }

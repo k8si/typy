@@ -34,30 +34,40 @@ export class Parser {
     private PARSE_ERR: string = "parser error";
     private internedStringList: Array<Buffer>;
 
+    //TODO there is absolutely no reason for these constructor params anymore
     constructor(filename:string, offset:number=8) {
         this.filename = filename;
         this.internedStringList = new Array<Buffer>();
     }
 
-    public parse(buf: Buffer): number {
+    public parse(data: string): number {
+        console.log("parsing...");
         this.pc = 0;
+        var buf = new Buffer(data);
+
         while (this.pc + 1 < buf.length) {
             var b = buf.readUInt8(this.pc);
             if (b == this.type_map.CODE) break;
             else this.pc++;
         }
-        console.log("start reading at offset: " + this.pc);
-        console.log("first char: " + buf.readUInt8(this.pc));
-        this.read_object(buf);
-        console.log("done.");
-        return 0;
+//        console.log("start reading at offset: " + this.pc);
+//        console.log("first char: " + buf.readUInt8(this.pc));
+        var obj = this.read_object(buf);
+//        console.log("done.");
+        if (obj) {
+            console.log("done parsing.");
+            var vm = new interp.VirtualMachine();
+            var result = vm.run_code(obj);
+            if (result) return 0;
+        }
+        return 1;
     }
 
     //TODO this could probably be more succint
     private read_object(data:Buffer, extra?: string): any {
         if (this.pc + 1 > data.length) throw new Error("parser error");
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
-        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
+//        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
         var offset = this.pc; //for bookkeeping
         this.pc++;
         var tm = this.type_map;
@@ -169,7 +179,7 @@ export class Parser {
                     firstlineno, lnotab
                 );
 
-                console.log(obj.toString());
+//                console.log(obj.toString());
 //                obj.print_co_code();
 //                obj.parse_co_code();
 

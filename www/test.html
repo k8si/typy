@@ -4,7 +4,28 @@
     <meta charset="UTF-8">
     <title>TyPy Test Suite</title>
     <!-- because why not -->
-    <style> div { font-family: "Helvetica", Arial, Verdana, serif; } </style>
+    <style>
+        div { font-family: "Helvetica", Arial, Verdana, serif; }
+        .pass { color: #2ecc71; }
+        .fail { color: #e74c3c; }
+        #output { color: #7f8c8d; font-family: "Courier New", "Lucida Grande", monospace; }
+        #test_output { font-family: "Helvetica", Arial, Verdana, serif; }
+        .blink {
+            animation-duration: 0.25s;
+            animation-name: blink;
+            animation-iteration-count: infinite;
+            animation-direction: alternate;
+            animation-timing-function: ease-in-out;
+        }
+        @keyframes blink {
+            0% {
+                opacity: 1;
+            }
+            100% {
+                opacity: 0;
+            }
+        }
+    </style>
     <script src="scripts/browserfs.js"></script>
     <script data-main="scripts/test" src="scripts/require.js"></script>
 </head>
@@ -17,12 +38,21 @@
     <br>
     <br>
 
-    <strong>upload and run test data:</strong>
-    <input type="file" id="files" name="files[]" multiple />
-    <output id="list"></output>
+    Did you start the server first ??!!
+    <br><br>
+    Yes? Toggle web developer tools and watch the console.
+    <br>
+    No? ("cd testserver ; npm start")
+    <br><br>
 
 </div>
 
+<div id="test_output"></div>
+
+
+<div id="output">
+    <strong>STDOUT</strong> <!--<span class="blink"> >> </span></strong> -->
+</div>
 
 
 

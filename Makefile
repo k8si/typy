@@ -1,13 +1,21 @@
 TSC = TSC
 FLAGS = --module amd
 ROOT = www/scripts/helper/
+TESTROOT = testserver/public/data
 
-.SUFFIXES: .ts .js
+PYC = python -m compileall
+
+.SUFFIXES: .ts .js .py .pyc
 
 .ts.js:
 	$(TSC) $(FLAGS) $*.ts
 
+.py.pyc:
+	$(PYC) $*.py
+
 CLASSES = $(ROOT)interpret.ts $(ROOT)opcodes.ts $(ROOT)parse.ts $(ROOT)py_objects.ts $(ROOT)utils.ts $(ROOT)vm_objects.ts $(ROOT)builtins.ts www/scripts/tests/test_suite.ts
+
+TESTS = $(TESTROOT)/test_if.py $(TESTROOT)/test_for_loop.py $(TESTROOT)/test_while_loop.py $(TESTROOT)/test_list.py $(TESTROOT)/test_neg_numbers.py
 
 default: classes
 
@@ -18,3 +26,9 @@ run: default
 
 clean:
 	$(RM) $(ROOT)*.js
+	$(RM) $(TESTROOT)/*.pyc
+
+tests: $(TESTS:.py=.pyc)
+
+
+

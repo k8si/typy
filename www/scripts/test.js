@@ -35,8 +35,15 @@ require(['tests/test_suite'], function(test_suite) {
 
     function makeCorsRequest() {
         var prefix = "http://localhost:3000/data/";
-        var files = ["test_if.pyc", "test_for_loop.pyc"];
-//        var files = ["dummy.txt"];
+        var files = [
+            "test_if.pyc",
+            "test_for_loop.pyc",
+            "test_while_loop.pyc",
+            "test_list.pyc",
+//            "test_dict.pyc",
+            "test_neg_numbers.pyc"
+        ];
+
         for (var i = 0; i < files.length; i++){
             var fullpath = prefix + files[i];
             var xhr = createCORSRequest('GET', fullpath);
@@ -52,8 +59,14 @@ require(['tests/test_suite'], function(test_suite) {
                         console.log("response loaded");
                         var result = tsuite.test(f, hr.responseText);
                         if (result != undefined) {
-                            console.log("done.");
-
+                            if (result == 0) {
+                                console.log("done.");
+                                document.getElementById("output").innerHTML += '<p class="pass">PASSED: ' + f + '</p>';
+                            } else {
+                                document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + f + '</p>';
+                            }
+                        } else {
+                            document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + f + '</p>';
                         }
                     } else {
                         //do nothing while we wait...
