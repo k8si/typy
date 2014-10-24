@@ -39,201 +39,73 @@ export class Parser {
         this.internedStringList = new Array<Buffer>();
     }
 
-    public parse(bstring:string, offset:number): void {
-
+    public parse(buf: Buffer): number {
         this.pc = 0;
-        console.log("\nparsing...");
-        var buf = new Buffer(bstring.slice(offset, bstring.length));
-        var pyObject = this.read_object(buf);
-        console.log("done. starting interpreter...");
-        var vm = new interp.VirtualMachine();
-        var result = vm.run_code(pyObject);
-        console.log("finished.");
-    }
-
-    private read_byte(data:Buffer): number {
-        if (this.pc+1 > data.length) throw new Error(this.PARSE_ERR);
-        return data.readUInt8(this.pc++);
-    }
-
-
-//
-//    /**
-//     * read a 64 bit two's-complement integer value ??
-//     *
-//     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
-//     * TODO should return type Long (or LongStatic?) but I get a compiler error
-//     * **/
-    private read_type_long(data:Buffer): dcodeIO.Long {
-        console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
-        var low32 = this.read_long(data);
-        var high32 = this.read_long(data);
-        return new Long(low32, high32);
-//        var n = Parser.read_long(data);
-//        var sign = 1;
-//        if (n < 0){ sign = -1; n = -1*n;}
-//        console.assert(Parser.pc + 2 * n <= data.length, Parser.PARSE_ERR);
-//        var raw = '';
-////    var l = 0L;
-//        var l = 0;
-//        for (var i = 0; i < n; i++) {
-//            var d = Parser.read_short(data);
-//            console.assert(d >= 0, Parser.PARSE_ERR);
-//            l += Math.pow(d * 32768, i);
-//            //raw += d.raw
-//        }
-//        return l * sign;
-    }
-//
-    private read_long(data:Buffer): number {
-        if (this.pc + 4 > data.length) throw new Error("parsing error");
-        var longval = data.readInt32LE(this.pc);
-        this.pc += 4;
-        return longval;
-    }
-
-    private read_unsigned_long(data:Buffer): number {
-        if (this.pc + 4 > data.length) throw new Error(this.PARSE_ERR);
-        var ulong = data.readUInt32LE(this.pc);
-        this.pc += 4;
-        return ulong;
-    }
-//
-    private read_float(data:Buffer): number {
-        if (this.pc + 8 > data.length) throw new Error(this.PARSE_ERR);
-        var float = data.readDoubleLE(this.pc);
-        this.pc += 8;
-        return float;
-    }
-//
-//
-    private read_string(data:Buffer): Buffer {
-        var coLength = this.read_long(data);
-        var co_code = new Buffer(coLength);
-        data.copy(co_code, 0, this.pc, this.pc+coLength);
-        this.pc += coLength;
-        return co_code;
-    }
-//
-    private read_tuple(data:Buffer): any[] {
-        var n = this.read_long(data);
-        console.log("\tgot tuple of len " + n + ": ");
-        console.assert(n >= 0, this.PARSE_ERR);
-        var a = [];
-        for (var i = 0; i < n; i++) {
-//            console.log("\tread tuple: reading thing @ idx " + i + "...");
-            var o = this.read_object(data);
-            console.log("\t...got : " + o.toString());
-//            a.push(o);
-            a.push(o);
+        while (this.pc + 1 < buf.length) {
+            var b = buf.readUInt8(this.pc);
+            if (b == this.type_map.CODE) break;
+            else this.pc++;
         }
-//        for (var i = 0; i < n; i++) {
-//            if (a[i]) console.log("\t" + a[i].toString());
-//            else console.log("\t" + a[i]);
-//        }
-        return a;
+        console.log("start reading at offset: " + this.pc);
+        console.log("first char: " + buf.readUInt8(this.pc));
+        this.read_object(buf);
+        console.log("done.");
+        return 0;
     }
-//
-//    /*
-//     def r_dict(self):
-//     offset = self.p
-//     d = {}
-//     k = self.r_object()
-//     while k.__class__.__name__ != 'pyNull':
-//     d[k] = self.r_object()
-//     k = self.r_object()
-//     return pyDict(offset, d[k)
-//     */
-//    //TODO fix/make sure this works
-    private read_dict(data:Buffer): utils.Dict<any> {
-        console.log("read_dict...");
-        var d = new utils.Dict<any>();
-        var k = this.read_object(data);
-        while (k != undefined && k != null) {
-            var val = this.read_object(data);
-            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, this.read_object(data));
-            else break;
-            k = val;
-        }
-        return d;
-    }
-
 
     //TODO this could probably be more succint
     private read_object(data:Buffer, extra?: string): any {
         if (this.pc + 1 > data.length) throw new Error("parser error");
-//        console.log(typeof data);
-//        var byte = 0;
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
-        if (extra) console.log(extra + " : current typechar: " + String.fromCharCode(byte));
+        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
         var offset = this.pc; //for bookkeeping
         this.pc++;
         var tm = this.type_map;
         switch(byte) {
-
-            case tm.NULL:
-                return new pyo.PyNull();
-
-            case tm.NONE:
-                return new pyo.PyNone();
-
-            case tm.STOPITER:
-                return new pyo.PyStopIter();
-
-            case tm.ELLIPSIS:
-                return new pyo.PyEllipsis();
-
-            case tm.FALSE:
-                return new pyo.PyFalse();
-
-            case tm.TRUE:
-                return new pyo.PyTrue();
-
+            case tm.NULL: return new pyo.PyNull();
+            case tm.NONE: return new pyo.PyNone();
+            case tm.STOPITER: return new pyo.PyStopIter();
+            case tm.ELLIPSIS: return new pyo.PyEllipsis();
+            case tm.FALSE: return new pyo.PyFalse();
+            case tm.TRUE: return new pyo.PyTrue();
             case tm.INT: //TODO just return "number" instead ?
-//                console.log("found int @ " + offset);
-                return new pyo.PyInt(this.read_long(data));
+                var intval = this.read_long(data);
+                var sign = 1;
+                if (intval < 0) sign = -1; //throw new Error("parser: negative ints not yet implemented");
+                return new pyo.PyInt(intval);
 
             //TODO not sure if this is correct
             case tm.INT64:
-//                console.log("found int64");
+                console.log("found int64");
                 var lo4 = this.read_unsigned_long(data);
                 var hi4 = this.read_long(data);
                 return new pyo.PyInt64(new Long(lo4, hi4));
 
-            case tm.LONG:
-//                console.log("found long");
-                return new pyo.PyLong(this.read_type_long(data));
+            case tm.LONG: return new pyo.PyLong(this.read_type_long(data));
 
-            case tm.FLOAT:
-//                console.log("found float");
-                return new pyo.PyFloat(this.read_float(data));
+            case tm.FLOAT: return new pyo.PyFloat(this.read_float(data));
 
             case tm.BINARY_FLOAT:
-//                console.log("found binary_float");
+                console.log("found binary_float");
                 return new pyo.PyFloat(this.read_float(data));
 
             case tm.COMPLEX: //TODO
-//                console.log("found complex");
-//                return undefined;
+                console.log("found complex");
                 throw new Error("complex not yet implemented.");
 
             case tm.BINARY_COMPLEX:
-//                console.log("found binary_complex");
-//                return undefined; //TODO
+                console.log("found binary_complex");
                 throw new Error("complex not yet implemented");
 
             case tm.INTERNED:
-//                console.log("found interned @ " + offset);
                 var tmp = this.read_string(data);
                 this.internedStringList.push(tmp);
                 return new pyo.PyInterned(tmp);
 
-            case tm.STRING:
-//                console.log("found string @ " + offset);
-                return new pyo.PyString(this.read_string(data));
+            case tm.STRING: return new pyo.PyString(this.read_string(data));
+
 
             case tm.STRINGREF:
-//                console.log("found stringref @ " + offset);
                 var i = this.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
                 var interned = this.internedStringList[i];
                 return new pyo.PyStringRef(interned);
@@ -242,26 +114,20 @@ export class Parser {
                 var tmp = this.read_string(data);
                 return new pyo.PyUnicode(tmp.toString('utf8')); //TODO
 
-            case tm.TUPLE:
-//                console.log("found tuple @ " + offset);
-                return new pyo.PyTuple(this.read_tuple(data));
+            case tm.TUPLE: return new pyo.PyTuple(this.read_tuple(data));
 
             case tm.LIST:
                 console.log("!!!! found list");
-                throw new Error("parse.ts: not yet implemented");
+                throw new Error("parse.ts: type LIST not yet implemented");
 //                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
             case tm.DICT:
                 console.log("!!!! found dict @ " + offset);
-                throw new Error("parse.ts: not yet implemented");
-//                return new pyo.PyDict(offset, this.read_dict(data)); //TODO
+                throw new Error("parse.ts: type DICT not yet implemented");
 
             case tm.FROZENSET:
                 console.log("!!!! found frozenset @ " + offset);
-                throw new Error("parse.ts: not yet implemented");
-//                return undefined;
-//                return new pyo.PyFrozenSet(offset, this.read_tuple(data));
-//                return undefined; //TODO
+                throw new Error("parse.ts: type FROZENSET not yet implemented");
 
             case tm.CODE:
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
@@ -304,17 +170,121 @@ export class Parser {
                 );
 
                 console.log(obj.toString());
-                obj.print_co_code();
+//                obj.print_co_code();
 //                obj.parse_co_code();
 
                 return obj;
 
             default:
                 console.log('unknown type ' + byte + ' ' + String.fromCharCode(byte));
-                throw new Error("parse.ts: not yet implemented");
-//                return undefined;
+                throw new Error("parse.ts: unknown type: " + byte);
         }
     }
+
+//    /**
+//     * read a 64 bit two's-complement integer value ??
+//     *
+//     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
+//     * TODO should return type Long (or LongStatic?) but I get a compiler error
+//     * **/
+    private read_type_long(data:Buffer): dcodeIO.Long {
+        console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
+        var low32 = this.read_long(data);
+        var high32 = this.read_long(data);
+        return new Long(low32, high32);
+//        var n = Parser.read_long(data);
+//        var sign = 1;
+//        if (n < 0){ sign = -1; n = -1*n;}
+//        console.assert(Parser.pc + 2 * n <= data.length, Parser.PARSE_ERR);
+//        var raw = '';
+////    var l = 0L;
+//        var l = 0;
+//        for (var i = 0; i < n; i++) {
+//            var d = Parser.read_short(data);
+//            console.assert(d >= 0, Parser.PARSE_ERR);
+//            l += Math.pow(d * 32768, i);
+//            //raw += d.raw
+//        }
+//        return l * sign;
+    }
+//
+    private read_long(data:Buffer): number {
+
+        if (this.pc + 4 > data.length) throw new Error("parsing error");
+        var longval = data.readInt32LE(this.pc);
+
+
+        if (longval < 0) {
+            var uval = data.readUInt32LE(this.pc);
+            longval = ~uval+1;
+            console.log("read_long @ " + this.pc + " : val = " + longval);
+//            longval = ~longval+1;
+        }
+        this.pc += 4;
+        return longval;
+    }
+
+    private read_unsigned_long(data:Buffer): number {
+        if (this.pc + 4 > data.length) throw new Error(this.PARSE_ERR);
+        var ulong = data.readUInt32LE(this.pc);
+        this.pc += 4;
+        return ulong;
+    }
+//
+    private read_float(data:Buffer): number {
+        if (this.pc + 8 > data.length) throw new Error(this.PARSE_ERR);
+        var float = data.readDoubleLE(this.pc);
+        this.pc += 8;
+        return float;
+    }
+
+
+    private read_string(data:Buffer): Buffer {
+        var coLength = this.read_long(data);
+        var co_code = new Buffer(coLength);
+        data.copy(co_code, 0, this.pc, this.pc+coLength);
+        this.pc += coLength;
+        return co_code;
+    }
+//
+    private read_tuple(data:Buffer): any[] {
+        var n = this.read_long(data);
+        console.assert(n >= 0, this.PARSE_ERR);
+        var a = [];
+        for (var i = 0; i < n; i++) {
+            var o = this.read_object(data);
+            a.push(o);
+        }
+        return a;
+    }
+//
+//    /*
+//     def r_dict(self):
+//     offset = self.p
+//     d = {}
+//     k = self.r_object()
+//     while k.__class__.__name__ != 'pyNull':
+//     d[k] = self.r_object()
+//     k = self.r_object()
+//     return pyDict(offset, d[k)
+//     */
+//    //TODO fix/make sure this works
+    private read_dict(data:Buffer): utils.Dict<any> {
+        console.log("read_dict...");
+        var d = new utils.Dict<any>();
+        var k = this.read_object(data);
+        while (k != undefined && k != null) {
+            var val = this.read_object(data);
+            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, this.read_object(data));
+            else break;
+            k = val;
+        }
+        return d;
+    }
+
+
+
+
 }
 
 
