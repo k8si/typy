@@ -1,6 +1,25 @@
 CMPSCI 630 Project 1
 =========
 
+# Running the project
+
+`make`
+`make tests`
+open a browser window, open the developer tools
+open `www/app.html` in your browser
+
+
+# Running the test suite
+
+`make`
+`make tests`
+`cd testserver`
+`npm start`
+open a browser window, open the developer tools
+open `www/test.html` in your browser
+
+# Compilation
+
 compile for the browser: `tsc src/[source].ts --module amd`
 compile for node: `tsc src/[source].ts --module commonjs`
 
