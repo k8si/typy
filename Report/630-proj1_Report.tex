@@ -6,10 +6,13 @@
 \usepackage{graphicx}
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 
+\title{TyPy: A Python Bytecode Interpreter for the Browser}
+\author{Puja Mishra, Kate Silverstein}
+\date{27 October 2014}
+
 \begin{document}
+\maketitle
 \section{Understanding the Requirements}
-
-
 
 The goal of this project is to implement a Python bytecode interpreter which is engine dependent and also can be hosted on a variety of browsers. So the high level picture of how we have implemented is shown below.
 
@@ -18,7 +21,55 @@ The goal of this project is to implement a Python bytecode interpreter which is 
 \includegraphics[scale=1]{../Report/UnderstandingTheReq.png} 
 
 \end{figure}
+
+\section{Design Approach}
+% explain diagram in writing (high level)
+% user writes python, compiles using "compileall" module
+% user opens "app.html" in browser, uploads *.pyc file
+% file passed to parser, parser passes pyo.PyCodeObject to stack-based interpreter
+
+
+\subsection{Parser}
+% general structure of parser taken from UnPyc
+
+\subsubsection{Structure of a Python Bytecode File}
+% \subsection{Character Encoding Considerations} (if there's time?)
+
+\subsection{Interpreter}
+
+% general structure of interpreter taken from byterun 
+
+\subsubsection{Stack-Based Interpreters} 
+% talk about these vs. alternatives? (CPython is stack-based) (vs register-based? PyPy?)
+
+\subsection{Other Design Considerations}
+\subsubsection{Client-Side vs. Server-Side Javascript}
+% have to store files in browser local storage
+% have to use BrowserFS instead Node.js
+% have compile using AMD module instead of commonjs module (why did this matter? what are differences?)
+% have to use RequireJS to import
+
+\section{Results}
+\subsection{Supported Functionality}
+% simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math
+% sample output from browser console
+
+% \subsection{Runtime and Efficiency} %(if there's time)
+% how long does it take to run e.g. sorting a list for a huge list?
+
+\section{Future Work}
+
+\section{Conclusion}
+
+\section{References} % generate bibliography?
+% UnPyc
+% byterun
+% CPython
+% BrowserFS
+
+
+
+
 \end{document}
 
 
-\section{Parser}
