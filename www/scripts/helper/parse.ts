@@ -73,9 +73,7 @@ export class Parser {
         console.log("parsing...");
         this.pc = 0;
         console.log(datastr.length);
-
         var buf = new Buffer(datastr);
-//        var buf = new Buffer(this.bytestr_to_array(datastr));
         while (this.pc + 1 < buf.length) {
             var b = buf.readUInt8(this.pc);
             if (b == this.type_map.CODE) break;
@@ -85,13 +83,12 @@ export class Parser {
         var firstChar = buf.readUInt8(this.pc);
         if (firstChar != 99) throw new Error("error: first char is not 'c'");
         var obj = this.read_object(buf);
-//
+
         if (obj) {
             console.log("done parsing.");
-            return 0;
-////          var vm = new interp.VirtualMachine();
-////            var result = vm.run_code(obj);
-////            if (result) return 0;
+          var vm = new interp.VirtualMachine();
+            var result = vm.run_code(obj);
+            if (result) return 0;
         }
         return 1;
     }
@@ -111,7 +108,7 @@ export class Parser {
     private read_object(data:Buffer, extra?: string): any {
         if (this.pc + 1 > data.length) throw new Error("parser error");
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
-        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
+//        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
         var offset = this.pc; //for bookkeeping
         this.pc++;
         var tm = this.type_map;
@@ -122,51 +119,26 @@ export class Parser {
             case tm.ELLIPSIS: return new pyo.PyEllipsis();
             case tm.FALSE: return new pyo.PyFalse();
             case tm.TRUE: return new pyo.PyTrue();
-
-            // SHOULD BE:
-            // -1 = 'i\xff\xff\xff\xff'
-            // -2 = 'i\xfe\xff\xff\xff'
-            // 1 = 'i\x01\x00\x00\x00'
-            /*
-             ~ 0xFFFFFFFE + 1
-             2
-             */
-
-            //longval -2 : -33686019
-            //longval -1 : -33686019
-            //longval -40: -33686019
-            case tm.INT:
-                var longval = this.read_long(data);
-                console.log("longval: " + longval);
-
-                return new pyo.PyInt(longval);
-
-
-
-
+            case tm.INT: return new pyo.PyInt(this.read_long(data));
 
             //TODO not sure if this is correct
-            case tm.INT64:
-                console.log("found int64");
-                var lo4 = this.read_unsigned_long(data);
-                var hi4 = this.read_long(data);
-                return new pyo.PyInt64(new Long(lo4, hi4));
+            case tm.INT64: throw new Error("INT64 not yet implemented");
+//                console.log("found int64");
+//                var lo4 = this.read_unsigned_long(data);
+//                var hi4 = this.read_long(data);
+//                return new pyo.PyInt64(new Long(lo4, hi4));
 
-//            case tm.LONG: return new pyo.PyLong(this.read_type_long(data));
+            case tm.LONG: throw new Error("LONG not yet implemented"); //return new pyo.PyLong(this.read_type_long(data));
 
-            case tm.FLOAT: return new pyo.PyFloat(this.read_float(data));
+            case tm.FLOAT: throw new Error("FLOAT not yet implemented"); //return new pyo.PyFloat(this.read_float(data));
 
-            case tm.BINARY_FLOAT:
-                console.log("found binary_float");
-                return new pyo.PyFloat(this.read_float(data));
+            case tm.BINARY_FLOAT: throw new Error("BINARY_FLOAT not yet implemented");
+//                console.log("found binary_float");
+//                return new pyo.PyFloat(this.read_float(data));
 
-            case tm.COMPLEX: //TODO
-                console.log("found complex");
-                throw new Error("complex not yet implemented.");
+            case tm.COMPLEX: throw new Error("COMPLEX not yet implemented.");
 
-            case tm.BINARY_COMPLEX:
-                console.log("found binary_complex");
-                throw new Error("complex not yet implemented");
+            case tm.BINARY_COMPLEX: throw new Error("BINARY_COMPLEX not yet implemented");
 
             case tm.INTERNED:
                 var tmp = this.read_string(data);
@@ -181,70 +153,35 @@ export class Parser {
                 var interned = this.internedStringList[i];
                 return new pyo.PyStringRef(interned);
 
-            case tm.UNICODE:
-                var tmp = this.read_string(data);
-                return new pyo.PyUnicode(tmp.toString('utf8')); //TODO
+            case tm.UNICODE: throw new Error("UNICODE not yet implemented");
 
             case tm.TUPLE: return new pyo.PyTuple(this.read_tuple(data));
 
-            case tm.LIST:
-                console.log("!!!! found list");
-                throw new Error("parse.ts: type LIST not yet implemented");
+            case tm.LIST: throw new Error("parse.ts: type LIST not yet implemented");
 //                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
-            case tm.DICT:
-                console.log("!!!! found dict @ " + offset);
-                throw new Error("parse.ts: type DICT not yet implemented");
+            case tm.DICT: throw new Error("parse.ts: type DICT not yet implemented");
 
-            case tm.FROZENSET:
-                console.log("!!!! found frozenset @ " + offset);
-                throw new Error("parse.ts: type FROZENSET not yet implemented");
+            case tm.FROZENSET: throw new Error("parse.ts: type FROZENSET not yet implemented");
 
             case tm.CODE:
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
+                var argcount: number = this.read_long(data);
+                var nlocals:  number = this.read_long(data);
+                var stacksize: number = this.read_long(data);
+                var flags: number = this.read_long(data);
+                var code: pyo.PyString = this.read_object(data, "code");
+                var consts: pyo.PyTuple = this.read_object(data, "consts");
+                var names: pyo.PyTuple = this.read_object(data, "names");
+                var varnames: pyo.PyTuple = this.read_object(data, "varnames");
+                var freevars: pyo.PyTuple = this.read_object(data, "freevars");
+                var cellvars: pyo.PyTuple = this.read_object(data, "cellvars");
+                var filename: pyo.PyString = this.read_object(data, "filename");
+                var name: pyo.PyString = this.read_object(data, "name");
+                var firstlineno: number = this.read_long(data);
+                var lnotab: number = this.read_long(data);
 
-                var argcount = this.read_long(data);
-                console.log("argcount = " + argcount);
-                var nlocals = this.read_long(data);
-                console.log("nlocals = " + nlocals);
-                var stacksize = this.read_long(data);
-                console.log("stacksize = " + stacksize);
-                var flags = this.read_long(data);
-                console.log("flags = " + flags);
-
-
-                //PyString
-//                console.log("code: " + String.fromCharCode(byte));
-
-                var code = this.read_object(data, "code");
-                console.log("code : " + code.type);
-
-                //should be PyTuples
-//                console.log("consts: " + String.fromCharCode(byte));
-                var consts = this.read_object(data, "consts");
-                console.log("consts : " + consts.toString());
-
-                var names = this.read_object(data, "names");
-                console.log("names : " + names.toString());
-
-                var varnames = this.read_object(data, "varnames");
-                var freevars = this.read_object(data, "freevars");
-                var cellvars = this.read_object(data, "cellvars");
-
-                var filename = this.read_object(data, "filename");
-                var name = this.read_object(data, "name");
-
-                var firstlineno = this.read_long(data);
-                var lnotab = this.read_long(data);
-
-                /*
-                 consts:PyTuple,
-                 names:PyTuple,
-                 varnames:PyTuple,
-                 freevars:PyTuple,
-                 cellvars:PyTuple,
-                 */
-                var obj = new pyo.PyCodeObject(offset, //offset
+                var obj: pyo.PyCodeObject = new pyo.PyCodeObject(offset, //offset
                     argcount, nlocals, stacksize, flags,
                     code,
                     consts, names, varnames, freevars, cellvars,
@@ -252,9 +189,7 @@ export class Parser {
                     firstlineno, lnotab
                 );
 
-                console.log(obj.toString());
-//                obj.print_co_code();
-//                obj.parse_co_code();
+//                console.log(obj.toString());
 
                 return obj;
 
@@ -326,10 +261,7 @@ export class Parser {
 //
     private read_tuple(data:Buffer): any[] {
         var n = this.read_long(data);
-        console.assert(n >= 0, this.PARSE_ERR);
-        console.log("found tuple of length : " + n);
-        var nextByte = data.readUInt8(this.pc);
-        console.log("next byte: " + nextByte + " --> typechar = " + String.fromCharCode(nextByte));
+        console.assert(n >= 0, this.PARSE_ERR);                
         var a = [];
         for (var i = 0; i < n; i++) {
             var o = this.read_object(data);
