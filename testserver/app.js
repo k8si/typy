@@ -23,7 +23,15 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'public')));
+
+var options = {
+    setHeaders: function (res, path) {
+        res.set('Content-Type', 'application/octet-stream');
+        res.set('Content-Transfer-Encoding', 'binary');
+    }
+};
+
+app.use(express.static(path.join(__dirname, 'public'), options));
 
 
 app.use('/', routes);

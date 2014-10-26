@@ -72,7 +72,6 @@ export class Parser {
     public parse(datastr: string): number {
         console.log("parsing...");
         this.pc = 0;
-        console.log(datastr.length);
         var buf = new Buffer(datastr);
         while (this.pc + 1 < buf.length) {
             var b = buf.readUInt8(this.pc);
@@ -85,10 +84,13 @@ export class Parser {
         var obj = this.read_object(buf);
 
         if (obj) {
-            console.log("done parsing.");
-          var vm = new interp.VirtualMachine();
+            console.log("obj.co_code:");
+            obj.print_co_code();
+            console.log("\n\n");
+            console.log("done parsing. starting interpreter...");
+            var vm = new interp.VirtualMachine();
             var result = vm.run_code(obj);
-            if (result) return 0;
+            if (result) {console.log("done."); return 0;}
         }
         return 1;
     }
@@ -261,7 +263,7 @@ export class Parser {
 //
     private read_tuple(data:Buffer): any[] {
         var n = this.read_long(data);
-        console.assert(n >= 0, this.PARSE_ERR);                
+        console.assert(n >= 0, this.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
             var o = this.read_object(data);

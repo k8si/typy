@@ -51,8 +51,9 @@ export class VirtualMachine {
     private TAG = "VirtualMachine:";
     private last_exception: any[];
     private stdout: string[];
+    private opLog: string[];
 
-    constructor(){ this.frames = []; this.stdout = []; }
+    constructor(){ this.frames = []; this.stdout = []; this.opLog = []; }
 
     private raise_error(msg:string): void {
         console.log(this.ERR + " " + msg);
@@ -192,6 +193,8 @@ export class VirtualMachine {
 //        console.log("dispatch(): CURRENT FRAME STACK:");
 //        this.frame.print_stack();
 //        console.log(" - - - - - - - - - - \n");
+        this.opLog.push(byteName);
+//        console.log("ops so far including this one: " + this.opLog);
         var why;
         if (byteName.search(/UNARY_/) == 0) this.unaryOperator(byteName.slice(6, byteName.length));
         else if (byteName.search(/BINARY_/) == 0) this.binaryOperator(byteName.slice(7, byteName.length));
@@ -404,9 +407,11 @@ export class VirtualMachine {
 
             case opcodes.Opcode.PRINT_ITEM:
                 var item = this.pop();
+                console.log("PRINT_ITEM: " + item.toString());
                 this.print(item.toString());
                 break;
             case opcodes.Opcode.PRINT_NEWLINE:
+                console.log("PRINT_NEWLINE");
                 this.print("");
                 break;
 
@@ -465,6 +470,8 @@ export class VirtualMachine {
         var a=this.pop();
         var b = this.pop();
         var c= this.pop();
+        var top3 = [a, b, c];
+        console.log(top3);
         this.push(c);
         this.push(b);
         this.push(a);
@@ -568,12 +575,14 @@ export class VirtualMachine {
     }
 
     private BUILD_LIST(numItems:number): void {
-        console.log("BUILD_LIST: with " + numItems + " items.");
+
         var items = [];
         for (var i = 0; i < numItems; i++) {
             items.push(this.pop());
         }
         items = items.reverse();
+        console.log("BUILD_LIST: with " + numItems + " items.");
+        console.log("\tdata: " + items);
         this.push(new pyo.PyList(items));
     }
 

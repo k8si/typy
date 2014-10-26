@@ -214,6 +214,7 @@ export class PyList implements PyObject {
 
     public get(idx:number): any {
         if (idx >= 0 && idx < this.value.length) return this.value[idx];
+        else if (idx < 0 && Math.abs(idx) < this.value.length) return this.value[this.value.length+idx];
         else return null;
     }
 
