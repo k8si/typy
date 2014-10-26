@@ -36,10 +36,10 @@ require(['tests/test_suite'], function(test_suite) {
     function makeCorsRequest() {
         var prefix = "http://localhost:3000/data/";
         var files = [
-            "test_if.pyc",
-            "test_for_loop.pyc",
-            "test_while_loop.pyc",
-            "test_list.pyc",
+//            "test_if.pyc",
+//            "test_for_loop.pyc",
+//            "test_while_loop.pyc",
+//            "test_list.pyc",
 //            "test_dict.pyc",
             "test_neg_numbers.pyc"
         ];
@@ -57,7 +57,7 @@ require(['tests/test_suite'], function(test_suite) {
                     console.log("xhr.onreadystatechange");
                     if (hr.readyState == 4 && hr.status == 200) {
                         console.log("response loaded");
-                        var result = tsuite.test(f, hr.responseText);
+                        var result = tsuite.test(f, hr.response);
                         if (result != undefined) {
                             if (result == 0) {
                                 console.log("done.");

@@ -27,6 +27,7 @@ import utils = require("./utils");
 import Long = require("long");
 
 
+
 //make sure that all of the wrapper objects have value and type fields
 export interface PyObject {
     value: any;
@@ -76,26 +77,27 @@ export class PyFalse implements PyObject {
 }
 
 
-//// abstract wrapper class for "complex" Python types which contain data
-//export class PyComplex extends PyObject {
-//    offset:number;
-//    type:string;
-//    constructor(offset:number, type:string){
-//        super(1, "");
-//        this.offset = offset;
-//        this.type = type;
-//    }
-//}
-
 export class PyInt implements PyObject {
     public value: number;
+    public sign: number;
     public type = "int";
+//    private bits: number[];
+//    private TWO_PWR_32_DBL_ = (1 << 16) * (1 << 16);
+//    private IntCache = new utils.Map<number, PyInt>();
     constructor(value: number){
-        this.value=value;
+        this.value = value;
     }
+//    private fromInt(value: number): number {
+//        if (-128 <= value && value < 128) {
+//            var cachedObj = this.IntCache.get(value);
+//            if (cachedObj) return cachedObj;
+//        }
+//        var obj = new PyInt
+//    }
     public toString(): string { return "(PyInt "+ this.value.toString() + ")"; }
-
 }
+
+
 
 //TODO should this really be of type Long ?
 export class PyInt64 implements PyObject {

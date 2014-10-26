@@ -140,8 +140,7 @@ export class Map<K, V> {
         if (this.contains(key)) {
             var idx = this._keys.indexOf(key, 0);
             return this._values[idx];
-        }
-        return undefined;
+        } else return undefined; //throw new Error("Map KeyError: key " + key.toString() + " not found.");
     }
 
     size(): number { return this._keys.length; }

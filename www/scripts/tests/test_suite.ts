@@ -1,10 +1,7 @@
-//import opcodes = require("./opcodes");
-
 import parse = require("../helper/parse");
 
 //TODO write more tests, bring more structure into vm/parser output to test for certain properties
 //TODO use object of functions instead of if-clauses+string matching?
-// --> HIGH PRIORITY TODO the whole CORS thing apparently doesnt work on Chrome (but there may be a workaround)
 
 
 //all of these separate test fxns seem unecessary right now but I think they will be more necessary once we
@@ -24,6 +21,10 @@ export var TestDict = {
     },
     "http://localhost:3000/data/test_list.pyc": function (data) {
         var parser = new parse.Parser("test_list.pyc", 0);
+        return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_neg_numbers.pyc": function (data) {
+        var parser = new parse.Parser("test_neg_numbers.pyc", 0);
         return parser.parse(data);
     }
 };

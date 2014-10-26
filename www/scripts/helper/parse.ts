@@ -8,6 +8,8 @@ import utils = require('./utils');
 import pyo = require('./py_objects');
 import interp = require("./interpret");
 import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/blob/master/long/long.d.ts
+//import numbers = require('./numbers');
+import gLong = require('./gLong');
 
 /**
  * All of this was stolen from UnPyc (http://sourceforge.net/projects/unpyc/)
@@ -16,14 +18,7 @@ import Long = require('long'); //https://github.com/borisyankov/DefinitelyTyped/
 
 
 /*
- TODO verify the little/big endian-ness of things
- TODO float vs long?
-
-
- ---> !!!! TODO there's something wrong with negative numbers e.g. a = [1, 2, 3]; print a[-1] <-----
-
-
-
+ TODO int vs. float vs long?
  */
 
 export class Parser {
@@ -40,34 +35,83 @@ export class Parser {
         this.internedStringList = new Array<Buffer>();
     }
 
-    public parse(data: string): number {
+    private bytestr_to_array(bstring: string): number[] {
+        var rv: number[] = [];
+        for (var i = 0; i < bstring.length; i++) {
+            var char = bstring.charCodeAt(i);
+            rv.push(char & 0xffff);
+        }
+        return rv;
+    }
+
+    private bytearray_2_buffer(bytes: number[], offset: number = 0, len: number = bytes.length): Buffer {
+        var buff = new Buffer(len), i: number;
+        for (i = 0; i < len; i++) {
+            buff.writeInt8(bytes[offset+i], i);
+        }
+        return buff;
+    }
+
+    private bytes2str(bytes: number[], nullterm?:boolean): string {
+        var y: number, z: number;
+        var idx = 0;
+        var rv = '';
+        while (idx < bytes.length) {
+            var x = bytes[idx++] & 0xff;
+            if (nullterm && x == 0) break;
+            rv += String.fromCharCode(
+                    x <= 0x7f ? x : x <= 0xdf ? (y = bytes[idx++],
+                    ((x & 0x1f) << 6) + (y & 0x3f)) : (y = bytes[idx++],
+                    z = bytes[idx++],
+                    ((x & 0xf) << 12) + ((y & 0x3f) << 6) + (z & 0x3f))
+            );
+        }
+        return rv;
+    }
+
+    public parse(datastr: string): number {
         console.log("parsing...");
         this.pc = 0;
-        var buf = new Buffer(data);
+        console.log(datastr.length);
 
+        var buf = new Buffer(datastr);
+//        var buf = new Buffer(this.bytestr_to_array(datastr));
         while (this.pc + 1 < buf.length) {
             var b = buf.readUInt8(this.pc);
             if (b == this.type_map.CODE) break;
             else this.pc++;
         }
-//        console.log("start reading at offset: " + this.pc);
-//        console.log("first char: " + buf.readUInt8(this.pc));
+
+        var firstChar = buf.readUInt8(this.pc);
+        if (firstChar != 99) throw new Error("error: first char is not 'c'");
         var obj = this.read_object(buf);
-//        console.log("done.");
+//
         if (obj) {
             console.log("done parsing.");
-            var vm = new interp.VirtualMachine();
-            var result = vm.run_code(obj);
-            if (result) return 0;
+            return 0;
+////          var vm = new interp.VirtualMachine();
+////            var result = vm.run_code(obj);
+////            if (result) return 0;
         }
         return 1;
+    }
+
+    private binstring(nmask): string {
+        for (var nflag = 0, nshifted = nmask, smask = ""; nflag < 32; nflag++, smask+=String(nshifted >>> 31), nshifted <<= 1);
+        return smask;
+    }
+
+    private r_byte(data: Buffer): number {
+        var val = data.readInt8(this.pc);
+        this.pc += 1;
+        return val;
     }
 
     //TODO this could probably be more succint
     private read_object(data:Buffer, extra?: string): any {
         if (this.pc + 1 > data.length) throw new Error("parser error");
         var byte = data.readUInt8(this.pc); //read a char (1 byte)
-//        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
+        console.log("current typechar @ " + this.pc + " : " + byte + " " + String.fromCharCode(byte));
         var offset = this.pc; //for bookkeeping
         this.pc++;
         var tm = this.type_map;
@@ -78,11 +122,28 @@ export class Parser {
             case tm.ELLIPSIS: return new pyo.PyEllipsis();
             case tm.FALSE: return new pyo.PyFalse();
             case tm.TRUE: return new pyo.PyTrue();
-            case tm.INT: //TODO just return "number" instead ?
-                var intval = this.read_long(data);
-                var sign = 1;
-                if (intval < 0) sign = -1; //throw new Error("parser: negative ints not yet implemented");
-                return new pyo.PyInt(intval);
+
+            // SHOULD BE:
+            // -1 = 'i\xff\xff\xff\xff'
+            // -2 = 'i\xfe\xff\xff\xff'
+            // 1 = 'i\x01\x00\x00\x00'
+            /*
+             ~ 0xFFFFFFFE + 1
+             2
+             */
+
+            //longval -2 : -33686019
+            //longval -1 : -33686019
+            //longval -40: -33686019
+            case tm.INT:
+                var longval = this.read_long(data);
+                console.log("longval: " + longval);
+
+                return new pyo.PyInt(longval);
+
+
+
+
 
             //TODO not sure if this is correct
             case tm.INT64:
@@ -91,7 +152,7 @@ export class Parser {
                 var hi4 = this.read_long(data);
                 return new pyo.PyInt64(new Long(lo4, hi4));
 
-            case tm.LONG: return new pyo.PyLong(this.read_type_long(data));
+//            case tm.LONG: return new pyo.PyLong(this.read_type_long(data));
 
             case tm.FLOAT: return new pyo.PyFloat(this.read_float(data));
 
@@ -141,19 +202,31 @@ export class Parser {
 
             case tm.CODE:
                 //based on http://daeken.com/2010-02-20_Python_Marshal_Format.html
+
                 var argcount = this.read_long(data);
+                console.log("argcount = " + argcount);
                 var nlocals = this.read_long(data);
+                console.log("nlocals = " + nlocals);
                 var stacksize = this.read_long(data);
+                console.log("stacksize = " + stacksize);
                 var flags = this.read_long(data);
+                console.log("flags = " + flags);
+
 
                 //PyString
 //                console.log("code: " + String.fromCharCode(byte));
+
                 var code = this.read_object(data, "code");
+                console.log("code : " + code.type);
 
                 //should be PyTuples
 //                console.log("consts: " + String.fromCharCode(byte));
                 var consts = this.read_object(data, "consts");
+                console.log("consts : " + consts.toString());
+
                 var names = this.read_object(data, "names");
+                console.log("names : " + names.toString());
+
                 var varnames = this.read_object(data, "varnames");
                 var freevars = this.read_object(data, "freevars");
                 var cellvars = this.read_object(data, "cellvars");
@@ -179,7 +252,7 @@ export class Parser {
                     firstlineno, lnotab
                 );
 
-//                console.log(obj.toString());
+                console.log(obj.toString());
 //                obj.print_co_code();
 //                obj.parse_co_code();
 
@@ -191,45 +264,39 @@ export class Parser {
         }
     }
 
-//    /**
-//     * read a 64 bit two's-complement integer value ??
-//     *
-//     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
-//     * TODO should return type Long (or LongStatic?) but I get a compiler error
-//     * **/
-    private read_type_long(data:Buffer): dcodeIO.Long {
-        console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
-        var low32 = this.read_long(data);
-        var high32 = this.read_long(data);
-        return new Long(low32, high32);
-//        var n = Parser.read_long(data);
+    private read_short(data:Buffer): number {
+        var val = data.readInt16LE(this.pc);
+        this.pc += 2;
+        return val;
+
+    }
+
+////    /**
+////     * read a 64 bit two's-complement integer value ??
+////     *
+////     * TODO no idea what's going on here i.e. whether or not this actually does the right thing
+////     * TODO should return type Long (or LongStatic?) but I get a compiler error
+////     * **/
+//    private read_type_long(data:Buffer): number {
+//        console.assert(this.pc + 8 <= data.length, this.PARSE_ERR);
+//        var n = this.read_long(data);
+//        this.pc = this.pc - 4;
 //        var sign = 1;
-//        if (n < 0){ sign = -1; n = -1*n;}
-//        console.assert(Parser.pc + 2 * n <= data.length, Parser.PARSE_ERR);
-//        var raw = '';
-////    var l = 0L;
+//        if (n < 0){ sign = -1; n = -n;}
+//        console.assert(this.pc + (2 * Math.abs(n)) <= data.length, "err (this.pc+2n > data.length)");
 //        var l = 0;
 //        for (var i = 0; i < n; i++) {
-//            var d = Parser.read_short(data);
-//            console.assert(d >= 0, Parser.PARSE_ERR);
+//            var d = this.read_short(data);
+//            console.assert(d >= 0, "err !(d>=0)");
 //            l += Math.pow(d * 32768, i);
 //            //raw += d.raw
 //        }
 //        return l * sign;
-    }
+//    }
 //
     private read_long(data:Buffer): number {
-
         if (this.pc + 4 > data.length) throw new Error("parsing error");
         var longval = data.readInt32LE(this.pc);
-
-
-        if (longval < 0) {
-            var uval = data.readUInt32LE(this.pc);
-            longval = ~uval+1;
-            console.log("read_long @ " + this.pc + " : val = " + longval);
-//            longval = ~longval+1;
-        }
         this.pc += 4;
         return longval;
     }
@@ -260,6 +327,9 @@ export class Parser {
     private read_tuple(data:Buffer): any[] {
         var n = this.read_long(data);
         console.assert(n >= 0, this.PARSE_ERR);
+        console.log("found tuple of length : " + n);
+        var nextByte = data.readUInt8(this.pc);
+        console.log("next byte: " + nextByte + " --> typechar = " + String.fromCharCode(nextByte));
         var a = [];
         for (var i = 0; i < n; i++) {
             var o = this.read_object(data);

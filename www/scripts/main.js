@@ -29,25 +29,23 @@ require(['helper/parse'], function(parse) {
                 throw new Error("main.js: something went wrong with FileReader");
             }
             var fname = '/'+ file.name;
-            fs.writeFile(fname, fr.result, function(err) {
-                if (err) throw err;
-                console.log('wrote to ' + fname);
-                fs.readFile(fname, function(err, contents) {
-                    console.log(Buffer.isBuffer(contents));
-                    var result = p.parse(contents);
-                });
-            });
-//            var result = p.parse(fr.result);
+            var result = p.parse(fr.result);
+
+
+//            fs.writeFile(fname, fr.result, function(err) {
+//                if (err) throw err;
+//                console.log('wrote to ' + fname);
+//                fs.readFile(fname, function(err, contents) {
+//                    console.log(Buffer.isBuffer(contents));
+//                    var result = p.parse(contents);
+//                });
+//            });
+////            var result = p.parse(fr.result);
         };
 
-//        fr.readAsArrayBuffer(file);
-//        fr.readAsBinaryString(file);
-        fr.readAsText(file);
-//        fr.readAsDataURL(file);
+        fr.readAsArrayBuffer(file);
     }
 
     document.getElementById('files').addEventListener('change', handleFileSelect, false);
-//    document.getElementById('test_files').addEventListener('change', handleTestFileSelect, false);
-
 
 });
