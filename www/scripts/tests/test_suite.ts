@@ -26,6 +26,10 @@ export var TestDict = {
     "http://localhost:3000/data/test_neg_numbers.pyc": function (data) {
         var parser = new parse.Parser("test_neg_numbers.pyc", 0);
         return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_dict.pyc": function(data) {
+        var parser = new parse.Parser("test_dict.pyc", 0);
+        return parser.parse(data);
     }
 };
 
