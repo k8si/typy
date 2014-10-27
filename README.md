@@ -5,12 +5,12 @@ CMPSCI 630 Project 1
 
 1. Clone the repository and `cd` into the directory:
 
-	git clone https://github.com/k8si/630-proj1.git
-	cd 630-proj1/
+		git clone https://github.com/k8si/630-proj1.git
+		cd 630-proj1/
 
 2. Compile everything:
 
-	make
+		make
     
 3. Open a browser window and the browser's developer tools
 4. Open `630-proj1/www/app.html` in your browser
@@ -24,16 +24,16 @@ Assuming you've already cloned the repository and you're in the top level of 630
 
 1. Compile the Python test scripts to bytecode:
 
-	make tests
+		make tests
 
 2. `cd` into the testserver directory and install dependencies:
 
-	cd testserver/
-	npm install
+		cd testserver/
+		npm install
     
 3. Start the server. (The test server just serves static *.pyc files which we can use to run tests automatically.)
 
-	npm start
+		npm start
     
 4. Open a browser window and the browser's developer tools
 5. Open `630-proj1/www/test.html` in your browser. The tests will start running automatically.
