@@ -1,4 +1,4 @@
-CMPSCI 630 Project 1
+TyPy: A Python Bytecode Interpreter for the Browser
 =========
 
 # Running the project
