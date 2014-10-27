@@ -19,13 +19,13 @@ require(['tests/test_suite'], function(test_suite) {
         var xhr = new XMLHttpRequest();
         if ("withCredentials" in xhr) {
             xhr.open(method, url, true);
-            xhr.setRequestHeader('Content-Type', 'text/plain');
+            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
             xhr.setRequestHeader('origin', 'me');
         } else if (typeof XDomainRequest != "undefined") {
             console.log("XDomainRequest undefined");
             xhr = new XDomainRequest();
             xhr.open(method, url);
-            xhr.setRequestHeader('Content-Type', 'text/plain');
+            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
             xhr.setRequestHeader('origin', 'me');
         } else {
             xhr = null;
@@ -36,12 +36,14 @@ require(['tests/test_suite'], function(test_suite) {
     function makeCorsRequest() {
         var prefix = "http://localhost:3000/data/";
         var files = [
-//            "test_if.pyc",
-//            "test_for_loop.pyc",
-//            "test_while_loop.pyc",
-//            "test_list.pyc",
-//            "test_dict.pyc",
-            "test_neg_numbers.pyc"
+            "test_if.pyc",
+            "test_for_loop.pyc",
+            "test_while_loop.pyc",
+            "test_list.pyc",
+            "test_dict.pyc",
+            "test_neg_numbers.pyc",
+            "test_math.pyc",
+            "test_fxn.pyc"
         ];
 
         for (var i = 0; i < files.length; i++){
@@ -68,11 +70,10 @@ require(['tests/test_suite'], function(test_suite) {
                         } else {
                             document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + f + '</p>';
                         }
-                    } else {
-                        //do nothing while we wait...
                     }
                 };
             })(fullpath, xhr);
+            xhr.responseType = "arraybuffer";
             xhr.send();
         }
     }

@@ -1,4 +1,5 @@
 .idea
-python_examples
 bower_components
-scratch
+testserver/public/data/*.pyc
+www/scripts/helper/*.js
+www/scripts/tests/*.js

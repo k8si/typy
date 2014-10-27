@@ -30,6 +30,14 @@ export var TestDict = {
     "http://localhost:3000/data/test_dict.pyc": function(data) {
         var parser = new parse.Parser("test_dict.pyc", 0);
         return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_math.pyc": function(data){
+        var parser = new parse.Parser("test_math.pyc", 0);
+        return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_fxn.pyc": function(data){
+        var parser = new parse.Parser("test_fxn.pyc", 0);
+        return parser.parse(data);
     }
 };
 
@@ -41,3 +49,5 @@ export class TestSuite {
         return 1; //"0 for success"
     }
 }
+
+var fxn = TestDict["http://localhost:3000/data/test_if.pyc"];
