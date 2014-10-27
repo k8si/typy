@@ -1,5 +1,12 @@
-TyPy: A Python Bytecode Interpreter for the Browser
+TyPy
 =========
+A Python Bytecode Interpreter for the Browser
+-------------
+
+UMass CMPSCI 630 Project #1
+
+Authors: Puja Mishra, Kate Silverstein
+
 
 # Running the project
 
