@@ -4,6 +4,12 @@ TyPy is a Python 2.7 bytecode (*.pyc) interpreter for the browser.
 
 Authors: Puja Mishra, Kate Silverstein
 
+# Requirements
+
+* Typescript
+* [npm](https://www.npmjs.org/)
+* Browser: tested on recent versions of Firefox and Chrome
+
 # Running the project
 
 1. Clone the repository and `cd` into the directory:
@@ -11,14 +17,13 @@ Authors: Puja Mishra, Kate Silverstein
 		git clone https://github.com/k8si/630-proj1.git
 		cd 630-proj1/
 
-2. Install dependencies and compile everything:
+2. Compile everything:
 
 		npm install
-		make
     
 3. Open a browser window and the browser's developer tools
 4. Open `630-proj1/www/app.html` in your browser
-5. Use the "Browse..." button to select and open a *.pyc file
+5. Use the "Browse..." button to select and open a *.pyc file (e.g. select a file from 630-proj1/samples)
 
 The output of the interpreter will be displayed in the developer tools Javascript console, and any output directed to standard out will be printed to and embedded in the HTML toward the bottom of the window.
 
