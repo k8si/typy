@@ -28,6 +28,6 @@
     "express": "4.*",
     "browserfs": "0.3.5",
     "typescript": "0.9.7",
-    "requirejs": "*",
+    "requirejs": "*"
   }
 }
