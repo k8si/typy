@@ -3,3 +3,6 @@ bower_components
 testserver/public/data/*.pyc
 www/scripts/helper/*.js
 www/scripts/tests/*.js
+old
+
+
