@@ -1,12 +1,8 @@
 TyPy
 =========
-A Python Bytecode Interpreter for the Browser
--------------
-
-UMass CMPSCI 630 Project #1
+TyPy is a Python 2.7 bytecode (*.pyc) interpreter for the browser.
 
 Authors: Puja Mishra, Kate Silverstein
-
 
 # Running the project
 
@@ -15,8 +11,9 @@ Authors: Puja Mishra, Kate Silverstein
 		git clone https://github.com/k8si/630-proj1.git
 		cd 630-proj1/
 
-2. Compile everything:
+2. Install dependencies and compile everything:
 
+		npm install
 		make
     
 3. Open a browser window and the browser's developer tools

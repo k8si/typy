@@ -1,0 +1,33 @@
+{
+  "name": "typy",
+  "version": "1.0.0",
+  "description": "a python bytecode interpreter for the browser",
+  "main": "www/scripts/main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/k8si/630-proj1.git"
+  },
+  "keywords": [
+    "python",
+    "typescript",
+    "interpreter"
+  ],
+  "author": "Puja Mishra, Kate Silverstein",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/k8si/630-proj1/issues"
+  },
+  "homepage": "https://github.com/k8si/630-proj1"
+   "devDependencies": {
+    "express": "4.*",
+    "browserfs": "0.3.5",
+    "typescript": "0.9.7",
+    "requirejs": "*",
+  },
+   "engines": {
+    "node": ">= 0.10"
+  }
+}
