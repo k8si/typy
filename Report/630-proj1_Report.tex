@@ -38,16 +38,15 @@ The bytecode is an attribute of the code object and is found in cocode attribute
 % \subsection{Character Encoding Considerations} (if there's time?)
 
 \subsection{Interpreter Design}
-The "standard" Python interpreter -- i.e. the one that ships with most distributions of Python -- is CPython, a "stack-based interpreter" written in C. There don't seem to be many alternatives to CPython: according to the CPython website, the main two are \emph{PyPy}, a Python implementation using a just-in-time compiler; and \emph{Stackless Python}, which is apparently not a stack-based implementation (however, the \emph{Stackless} website doesn't provide much detail other than that it "supports microthreads"). In addition, CPython has been re-implemented to run on both .NET and the JVM. 
+We borrowed the general structure of our interpreter from byterun and adopted it to our design. It is a stack based interpreter where the bytecodes are parsed and put on the stack and interpreted by manipulating the items on the stack.
 
-The abundance of resources available for CPython ended up being the primary driver behind our decision to essentially port the relevant parts of CPython into Typescript. In the end, we borrowed the general structure of our interpreter from \emph{byterun} \cite{byterun}, a Python bytecode interpreter written in pure Python (which is, in turn, loosely based on \emph{CPython}, but much easier to read). Many aspects of \emph{byterun} translated into Typescript easily, while others did not (e.g. we had to completely re-implement anything that used a Python function from Python's built-in function library).
+% general structure of interpreter taken from byterun 
 
-It is worth noting here that we could have instead chosen from several alternative approaches: a \emph{PyPy}-style JIT compiler, a "register-based" interpreter, or we could have made up something completely new. Since neither of the authors had written an interpreter before, however, we decided to go for "tried-and-true"; in the future, it may be worthwhile to explore alternative approaches.
-
-
+\subsubsection{Stack-Based Interpreters} 
+% talk about these vs. alternatives? (CPython is stack-based) (vs register-based? PyPy?)
 
 \subsubsection{Implementation for TyPy}
-
+% ks
 
 \subsection{Other Design Considerations}
 \subsubsection{Client-Side vs. Server-Side Javascript}
@@ -61,15 +60,17 @@ It is worth noting here that we could have instead chosen from several alternati
 
 \section{Implementation Results}
 \subsection{Supported Functionality}
-% simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math
+The interpreter we have implemented can interpret simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math operations.
 % sample output from browser console
 
 % \subsection{Runtime and Efficiency} %(if there's time)
 % how long does it take to run e.g. sorting a list for a huge list?
 
 \section{Future Work}
+As an extension of the project we can add more functionality which can help to interpret complex functions written in python.
 
 \section{Conclusion}
+Working on this project has been a very good and learning  experience. The system implemented by us is a simple interpreter which can interpret basic functionality written in python.
 
 \section{References} % generate bibliography?
 % UnPyc
