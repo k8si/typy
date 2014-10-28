@@ -23,20 +23,22 @@ The goal of this project is to implement a Python bytecode interpreter which is 
 \end{figure}
 
 \section{Design Approach}
-% explain diagram in writing (high level)
-% user writes python, compiles using "compileall" module
-% user opens "app.html" in browser, uploads *.pyc file
-% file passed to parser, parser passes pyo.PyCodeObject to stack-based interpreter
+
+The input to the system is the python program written by the user and compiled using "compileall" module. This *.pyc file is uploaded when the user opens application, this file is passed to the parser where parser parses the bytecodes and generates a PyCodeObject to the the interpreter (which here is a stack based interpreter) , which interprets it and gives the result on the browser's console.
+
 
 
 \subsection{Parser}
 % general structure of parser taken from UnPyc
 
 \subsubsection{Structure of a Python Bytecode File}
+The bytecode is an attribute of the code object and is found in cocode attribute of the code object and contains instructions for the interpreter. Bytecode is nothing but a series of bytes.The interpreter will loop through each byte, look up what it should do for each one, and then do that thing. Using the dis module we can disassemble the bytecode.
+
+
 % \subsection{Character Encoding Considerations} (if there's time?)
 
 \subsection{Interpreter}
-
+The interpreter gets the python code object to interpret
 % general structure of interpreter taken from byterun 
 
 \subsubsection{Stack-Based Interpreters} 
