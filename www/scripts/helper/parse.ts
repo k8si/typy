@@ -69,7 +69,7 @@ export class Parser {
         return rv;
     }
 
-    public parse(datastr: ArrayBuffer): number {
+    public parse(datastr: ArrayBuffer, extra?:string): number {
         console.log("parsing...");
         this.pc = 0;
         var byteView = new Uint8Array(datastr);
@@ -86,7 +86,7 @@ export class Parser {
         this.pc = start;
         var firstChar = buf.readUInt8(this.pc);
         if (firstChar != 99) throw new Error("error: first char is not 'c'");
-        console.log("starting parsing at offset " + this.pc);
+//        console.log("starting parsing at offset " + this.pc);
         var obj = this.read_object(buf);
         if (obj) {
             console.log("done parsing. starting interpreter...\n");
@@ -94,8 +94,9 @@ export class Parser {
 //            obj.print_co_code();
 //            console.log("\nINTERPRETING...");
             var vm = new interp.VirtualMachine();
-            var result = vm.run_code(obj);
-            if (result) {console.log("done."); return 0;}
+            return vm.run_code(obj, extra);
+//            console.log("done running interpreter.");
+//            if (result && result == 0) {console.log("got result " + result); return result;}
         }
         return 1;
     }
@@ -180,7 +181,7 @@ export class Parser {
                 var filename: pyo.PyString = this.read_object(data, "filename");
                 var name: pyo.PyString = this.read_object(data, "name");
                 var firstlineno: number = this.read_long(data);
-                var lnotab: number = this.read_long(data);
+                var lnotab: any = this.read_object(data);
 
                 var obj: pyo.PyCodeObject = new pyo.PyCodeObject(offset, //offset
                     argcount, nlocals, stacksize, flags,
@@ -191,8 +192,8 @@ export class Parser {
                 );
 
 //                console.log(obj.toString());
-
 //                obj.print_co_code();
+//                console.log("finish obj. at offset " + this.pc + " / " + data.length);
 
                 return obj;
 
@@ -232,6 +233,7 @@ export class Parser {
 //        return l * sign;
 //    }
 //
+
     private read_long(data:Buffer): number {
         if (this.pc + 4 > data.length) throw new Error("parsing error");
         var longval = data.readInt32LE(this.pc);

@@ -1,5 +1,5 @@
 def get_string():
-	return "string"
+	return "hello from string!"
 
 s = get_string()
 print s

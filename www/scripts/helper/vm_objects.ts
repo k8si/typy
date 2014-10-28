@@ -33,7 +33,7 @@ export class Frame {
     block_stack: Block[];
     generator:any;
 
-    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
+    constructor(code, globals:any, locals:any, back){
 
         this.frame_code_object = code;
         this.globals = globals;
@@ -120,7 +120,7 @@ export class Function {
     __doc__: any;
     _vm: any;
 
-    constructor(name:string, py_code:pyo.PyCodeObject, globs:any, defaults:any, closure:any, vm:any) {
+    constructor(name:string, py_code:pyo.PyCodeObject, globs:any, defaults:any, vm:any, closure?:any) {
         this._vm = vm;
         this.func_code = py_code;
         if (py_code.name) this.func_name = py_code.name.toString();
@@ -147,7 +147,7 @@ export class Function {
 
     //TODO should be return Method...
     public __get__(instance: any, owner: any): any { return this; }
-    public __call__(a:any[], args?:any[], kwargs?:utils.Dict<any>): any {
+    public call(a:any[], args?:any[], kwargs?:utils.Dict<any>): any {
         if (a.length != this.func_code.argcount) throw new Error("FUNCTION ERR");
         //TODO if PY2
         var callargs = new utils.Dict<any>();

@@ -31,7 +31,9 @@ TESTS = $(TESTROOT)/test_if.py \
 		$(TESTROOT)/test_dict.py \
 		$(TESTROOT)/test_math.py \
 		$(TESTROOT)/test_fxn.py \
-		$(TESTROOT)/test_float.py
+		$(TESTROOT)/test_float.py \
+		$(TESTROOT)/test_tuple.py \
+		$(TESTROOT)/test_fib.py
 
 default: classes
 

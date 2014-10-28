@@ -6,9 +6,10 @@
     <!-- because why not -->
     <style>
         div { font-family: "Helvetica", Arial, Verdana, serif; }
-        .pass { color: #2ecc71; }
-        .fail { color: #e74c3c; }
+        .pass { color: #2ecc71; font-family: "Helvetica", Arial, Verdana, serif;}
+        .fail { color: #e74c3c; font-family: "Helvetica", Arial, Verdana, serif;}
         #output { color: #7f8c8d; font-family: "Courier New", "Lucida Grande", monospace; }
+        #results { color: #7f8c8d; font-family: "Courier New", "Lucida Grande", monospace; }
         #test_output { font-family: "Helvetica", Arial, Verdana, serif; }
         .blink {
             animation-duration: 0.25s;
@@ -16,6 +17,15 @@
             animation-iteration-count: infinite;
             animation-direction: alternate;
             animation-timing-function: ease-in-out;
+        }
+        hr {
+            display: block;
+            margin-top: 0.5em;
+            margin-bottom: 0.5em;
+            margin-left: auto;
+            margin-right: auto;
+            border-style: inset;
+            border-width: 1px;
         }
         @keyframes blink {
             0% {
@@ -47,11 +57,12 @@
 
 </div>
 
+<div id="results"></div>
+
 <div id="test_output"></div>
 
 
 <div id="output">
-    <strong>STDOUT</strong> <!--<span class="blink"> >> </span></strong> -->
 </div>
 
 

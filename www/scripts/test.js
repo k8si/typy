@@ -39,12 +39,14 @@ require(['tests/test_suite'], function(test_suite) {
             "test_if.pyc", //good
             "test_for_loop.pyc", //good
             "test_while_loop.pyc", //good
-//            "test_list.pyc" //TODO bad
+            "test_list.pyc", //good
             "test_dict.pyc", //good
             "test_neg_numbers.pyc", //good
             "test_math.pyc", //good
-//            "test_fxn.pyc" //TODO bad
-            "test_float.pyc"
+            "test_fxn.pyc", //good
+            "test_float.pyc", //good
+            "test_tuple.pyc" //good
+//            "test_fib.pyc" //TODO fails
         ];
 
         for (var i = 0; i < files.length; i++){
@@ -70,12 +72,12 @@ require(['tests/test_suite'], function(test_suite) {
                                 if (result != undefined) {
                                     if (result == 0) {
 //                                        console.log("done.");
-                                        document.getElementById("output").innerHTML += '<p class="pass">PASSED: ' + file + '</p>';
+                                        document.getElementById("results").innerHTML += '<p class="pass">PASSED: ' + file + '</p>';
                                     } else {
-                                        document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
+                                        document.getElementById("results").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
                                     }
                                 } else {
-                                    document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
+                                    document.getElementById("results").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
                                 }
                             } else {
                                 //do nothing

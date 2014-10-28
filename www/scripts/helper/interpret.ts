@@ -55,19 +55,27 @@ export class VirtualMachine {
     private stdout: string[];
     private opLog: string[];
 
-    constructor(){ this.frames = []; this.stdout = []; this.opLog = []; }
+    constructor(){ this.frames = []; this.stdout = []; this.opLog = []; this.last_exception = []; }
 
-    private raise_error(msg:string): void {
-        console.log(this.ERR + " " + msg);
+    private raise_error(msg:string): number {
+        console.log(this.ERR + " " + msg + "\n");
 
-        this.frame.frame_code_object.print_co_code();
+//        this.frame.frame_code_object.print_co_code();
 
-        console.log("CURRENT FRAME STACK:");
-        this.frame.print_stack();
-        throw new Error(this.ERR + " " + msg)
+//        console.log("\n");
+
+//        console.log("CURRENT FRAME STACK:");
+//        this.frame.print_stack();
+        this.last_exception.push(this.ERR + ": " + msg);
+
+        this.returnval = 1;
+        return this.returnval;
+//        throw new Error(this.ERR + " " + msg)
     }
 
-    private print(s:string): void { this.stdout.push(s); }
+    private print(s:string): void {
+        this.stdout.push(s);
+    }
 
     private top(): any {
         if (this.frame.stack.length == 0) this.raise_error("top(): frame stack empty.");
@@ -109,24 +117,44 @@ export class VirtualMachine {
 
     private make_frame(code:pyo.PyCodeObject, callargs=new pyo.PyDict(), globals?:any, locals?:any): vmo.Frame {
         console.log("make frame: " + code.toString());
-        var frame_globals, frame_locals;
+//        console.log("callargs: " + callargs.toString());
+//        if (globals) console.log("globals: " + globals.toString());
+//        if (locals) console.log("locals: " + locals.toString());
+
         if (globals) {
+            var frame_globals, frame_locals;
             frame_globals = globals;
             if (!locals) frame_locals = globals;
+            else frame_locals = locals;
+            frame_locals.update(callargs);
+            //    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
+            var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
+            return frame;
         } else if (this.frame) { //TODO "if (this.frame)" instead of this.frames?? bug in byterun??
+            var frame_globals, frame_locals;
             frame_globals = this.frame.globals;
             frame_locals = new pyo.PyDict();
+            frame_locals.update(callargs);
+            //    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
+            var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
+            return frame;
         } else {
+            var frame_globals, frame_locals;
             frame_globals = new pyo.PyDict();
             frame_globals.add("__builtins__", bi.builtins);
             frame_globals.add("__name__", new pyo.PyString(new Buffer("__main__")));
             frame_globals.add("__doc__", new pyo.PyNone());
             frame_globals.add("__package__", new pyo.PyNone());
             frame_locals = frame_globals;
+            frame_locals.update(callargs);
+            //    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
+            var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
+            return frame;
         }
-        frame_locals.update(callargs);
-        var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
-        return frame;
+//        frame_locals.update(callargs);
+//        //    constructor(code, globals:utils.Dict<any>, locals:utils.Dict<any>, back){
+//        var frame = new vmo.Frame(code, frame_globals, frame_locals, this.frame);
+//        return frame;
     }
 
     //TODO push_frame
@@ -140,20 +168,29 @@ export class VirtualMachine {
     //TODO print_frames
     //TODO resume_frame
 
-    public run_code(code:pyo.PyCodeObject, globals?:any, locals?:any): any {
+    public run_code(code:pyo.PyCodeObject, extra?: string, globals?:any, locals?:any): number {
         console.log("running code...");
         var frame = this.make_frame(code, globals, locals);
 
         var val = this.run_frame(frame);
-        if (this.frames.length > 0) throw new Error(this.ERR);
-        if (this.frame && this.frame.stack.length > 0) throw new Error(this.ERR);
+        if (this.frames.length > 0) {this.raise_error(this.ERR); return this.returnval;}
+        if (this.frame && this.frame.stack.length > 0) {this.raise_error(this.ERR); return this.returnval;}
         console.log("done.");
 
         var outString = "";
+        if (extra) outString += "<strong>"+extra+" (stdout) </strong><br>";
         for (var i = 0; i < this.stdout.length; i++) outString += " >> " + this.stdout[i] + " <br>";
+        var errString = "";
+        if (extra) errString += "<strong>"+extra+" (stderr) </strong><br>";
+        for (var i = 0; i < this.last_exception.length; i++) errString += " >> " + this.last_exception[i] + " <br>";
+
         console.log("RESULTS: " + outString);
-        document.getElementById("output").innerHTML += "<br>" + outString;
-        return val
+        document.getElementById("output").innerHTML += "<hr>" + outString;
+        document.getElementById("output").innerHTML += "<br>" + errString;
+
+
+        if (this.last_exception.length > 0) {console.log("VM: return 1"); return 1;}
+        else {console.log("VM: return 0"); return 0;}
     }
 
     private run_frame(frame:vmo.Frame): any {
@@ -162,7 +199,7 @@ export class VirtualMachine {
 
         while (true) {
             var byteinfo = this.parse_byte_and_args();
-            if (byteinfo.length < 3) throw new Error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString());
+            if (byteinfo.length < 3) {this.raise_error(this.ERR + ": byteinfo.length < 3 -- " + byteinfo.toString()); return;}
 //            console.log(INFO + " doing " + byteinfo.toString());
             var byteName = byteinfo[0];
             var byteCode = byteinfo[1];
@@ -254,8 +291,8 @@ export class VirtualMachine {
     private manage_block_stack(why:number): number {
         var TAG = " manage_block_stack(): ";
 
-        if (why == WHY.YIELD) throw new Error(this.ERR + TAG + " why == yield at start");
-        if (this.frame.block_stack.length == 0) throw new Error(this.ERR + TAG + " no blocks left to manage?");
+        if (why == WHY.YIELD) {return this.raise_error(this.ERR + TAG + " why == yield at start");}
+        if (this.frame.block_stack.length == 0) return this.raise_error(this.ERR + TAG + " no blocks left to manage?");
 
         var block = this.frame.block_stack[this.frame.block_stack.length - 1]; //pop the last thing off the current frame's block stack
 
@@ -313,7 +350,8 @@ export class VirtualMachine {
         console.log("BINARY_"+op);
         var y = this.pop();
         var x = this.pop();
-        this.push(BINARY_OPS[op](x.value, y.value));
+        if (op == "SUBSCR") this.push(BINARY_OPS[op](x, y.value));
+        else this.push(BINARY_OPS[op](x.value, y.value));
     }
 
     private inplaceOperator(op:string): void {
@@ -330,8 +368,7 @@ export class VirtualMachine {
             x = x + y;
             s += x;
             console.log(s);
-        }
-        else throw new Error(this.ERR);
+        } else {this.raise_error(this.ERR); return;}
         this.push(new pyo.PyInt(x));
         //TODO the rest of these
     }
@@ -389,6 +426,7 @@ export class VirtualMachine {
             case opcodes.Opcode.LOAD_ATTR: this.LOAD_ATTR(arg); break;
             case opcodes.Opcode.STORE_NAME: this.STORE_NAME(arg); break;
             case opcodes.Opcode.LOAD_NAME: this.LOAD_NAME(arg); break;
+            case opcodes.Opcode.LOAD_FAST: this.LOAD_FAST(arg); break;
 
             case opcodes.Opcode.POP_TOP: this.pop(); break;
             case opcodes.Opcode.DUP_TOP: this.DUP_TOP(); break;
@@ -478,6 +516,18 @@ export class VirtualMachine {
         this.push(val);
     }
 
+    private LOAD_FAST(arg: any): void {
+        console.log("LOAD_FAST: arg = " + arg.toString() + " " + arg.value.toString());
+        var val;
+        if (this.frame.locals.contains(arg.value.toString())) val = this.frame.locals.get(arg.value.toString());
+        else {
+//            console.log(this.frame.locals.toString());
+//            console.log(this.frame.globals.toString());
+            this.raise_error("local variable " + arg.value + " referenced before assignment.");
+        }
+        this.push(val);
+    }
+
     private ROT_TWO(): void {
         console.log("\tROT_TWO");
         var a = this.pop();
@@ -520,16 +570,21 @@ export class VirtualMachine {
         return WHY.RETURN;
     }
 
-    private MAKE_FUNCTION(arg:any): void {
+    private MAKE_FUNCTION(argc: any): void {
 //        if (!arg) throw new Error(this.ERR + " MAKE_FUNCTION: no arg??");
-        console.log("\tMAKE_FUNCTION"); //+ arg.toString());
+        console.log("MAKE_FUNCTION: arg = " + argc.toString()); //+ arg.toString());
+        var name = "";
         var code = this.pop();
+        console.log(code.toString());
+//        var argc = 0;
+//        if (arg.argcount) argc = arg.argcount;
         var defaults = [];
-        for (var i = 0; i < arg; i++) {
+        for (var i = 0; i < argc; i++) {
             defaults.push(this.pop());
         }
         var globs = this.frame.globals;
-        var fn = new vmo.Function("", code, globs, defaults, undefined, this);
+//        constructor(name:string, py_code:pyo.PyCodeObject, globs:any, defaults:any, vm:any, closure?:any) {
+        var fn = new vmo.Function(name, code, globs, defaults, this);
         this.push(fn);
     }
 
@@ -581,6 +636,10 @@ export class VirtualMachine {
     private COMPARE_OP(arg:any): void {
         var y = this.pop();
         var x = this.pop();
+        console.log("x: " + x);
+        console.log("y: " + y);
+        if (x === undefined || y === undefined) {this.raise_error("COMPARE_OP: undefined value"); return;}
+        if (!x.value || !y.value) {this.raise_error("COMPARE_OP: undefined value"); return;}
         var result;
         if (typeof arg == "object") arg = arg.value;
         switch (arg) {
@@ -630,7 +689,7 @@ export class VirtualMachine {
 
     private POP_JUMP_IF_FALSE(jump:any): void {
         var val = this.pop();
-        if (val == undefined) this.raise_error("POP_JUMP_IF_FALSE: val is undefined");
+        if (val == undefined) {this.raise_error("POP_JUMP_IF_FALSE: val is undefined"); return;}
         console.log("POP_JUMP_IF_FALSE: val = " + val.toString());
         if (val == false) this.jump(jump);
     }

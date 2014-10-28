@@ -48,7 +48,8 @@ Assuming you've already cloned the repository and you're in the top level of 630
 4. Open a browser window and the browser's developer tools
 5. Open `630-proj1/www/test.html` in your browser. The tests will start running automatically.
 
-The output of the tests will be displayed in the HTML page.
+The output of the tests will be displayed in the HTML page. Note that a test will indicate whether or not it has "passed", but
+you can also compare the output printed to the DOM (as well as the Javascript console) to the *.py files located in `testserver/public/data/`
 
 
 

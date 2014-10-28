@@ -6,28 +6,15 @@
  */
 
 /*
- TODO this may all be unnecessarily complicated
-
- TODO PyObjects for StopIter, Ellipsis, PyFloat, PyList, PySet and some others
-
- TODO change "any"-type fields to something other than "any" (anything that's "any" is "any"
- because I didn't feel like figuring it out at the time)
- */
-
-
-/*
  TODO:
  PyComplex (complex number)
- PySet
- others....
+ PySet, PyFrozenSet
  */
 
 import opcodes = require("./opcodes");
 import utils = require("./utils");
 import Long = require("long");
 
-
-//TODO should be T implements PyObject??
 export class PyFunction<T extends PyObject, R extends PyObject> {
     public name: string;
     public obj: T;
@@ -231,7 +218,7 @@ export class PyString implements PyObject {
     }
     //for reading bytecode byte by byte in PyCodeObject methods
 //    public toBuffer(): Buffer { return new Buffer(this.value); }
-    public toString(): string { return "<PyString '" + this.value.toString() + "'>"}
+    public toString(): string { return "(PyString '" + this.value.toString() + "')"}
 }
 
 export class PyInterned implements PyObject {
@@ -248,7 +235,7 @@ export class PyInterned implements PyObject {
     constructor(value: Buffer) {
         this.value = value.toString();
     }
-    public toString(): string { return "<PyInterned '"+ this.value.toString() + "'>"; }
+    public toString(): string { return "(PyInterned '"+ this.value.toString() + "')"; }
 
 }
 
@@ -266,7 +253,7 @@ export class PyStringRef implements PyObject {
     constructor(value: Buffer) {
         this.value = value.toString();
     }
-    public toString(): string { return "<PyStringRef '"+ this.value.toString() + "'>"; }
+    public toString(): string { return "(PyStringRef '"+ this.value.toString() + "')"; }
 }
 
 export class PyUnicode implements PyObject {
@@ -314,7 +301,7 @@ export class PyTuple implements PyObject, PyCollection {
                 info = info + ", ";
             }
         }
-        return " <PyTuple with "+this.value.length+" elements: ( " + info + " ) >"
+        return " (PyTuple ( " + info + " ) )"
     }
     public length(): number {
         return this.value.length;
@@ -322,6 +309,7 @@ export class PyTuple implements PyObject, PyCollection {
     public size(): number { return this.length(); }
     public get(idx:number): any {
         if (idx >= 0 && idx < this.value.length) return this.value[idx];
+        else if (idx < 0 && Math.abs(idx) < this.value.length) return this.value[this.value.length+idx];
         else return null;
     }
     public pop(idx: number): any {
