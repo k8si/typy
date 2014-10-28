@@ -37,12 +37,16 @@ The bytecode is an attribute of the code object and is found in cocode attribute
 
 % \subsection{Character Encoding Considerations} (if there's time?)
 
-\subsection{Interpreter}
-The interpreter gets the python code object to interpret
+\subsection{Interpreter Design}
+We borrowed the general structure of our interpreter from bittern
+
 % general structure of interpreter taken from byterun 
 
 \subsubsection{Stack-Based Interpreters} 
 % talk about these vs. alternatives? (CPython is stack-based) (vs register-based? PyPy?)
+
+\subsubsection{Implementation for TyPy}
+% ks
 
 \subsection{Other Design Considerations}
 \subsubsection{Client-Side vs. Server-Side Javascript}
@@ -51,24 +55,36 @@ The interpreter gets the python code object to interpret
 % have compile using AMD module instead of commonjs module (why did this matter? what are differences?)
 % have to use RequireJS to import
 
-\section{Results}
+\subsection{Test Suite}
+% CORS request to test server (Express)
+
+\section{Implementation Results}
 \subsection{Supported Functionality}
-The interpreter here supports simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math operations and displays the output on the browser's console.
+The interpreter we have implemented can interpret simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math
 % sample output from browser console
 
 % \subsection{Runtime and Efficiency} %(if there's time)
 % how long does it take to run e.g. sorting a list for a huge list?
 
 \section{Future Work}
-As an extension to our interpreter we can add more complex functions like nested if , for loops , etc. 
 
 \section{Conclusion}
-To conclude we would like to mention that though this is a simple interpreter 
+
 \section{References} % generate bibliography?
 % UnPyc
 % byterun
 % CPython
 % BrowserFS
+
+\begin{thebibliography}{9}
+
+\bibitem{byterun}
+  Ned Batchelder,
+  \emph{byterun }.
+  https://github.com/nedbat/byterun
+
+
+\end{thebibliography}
 
 
 

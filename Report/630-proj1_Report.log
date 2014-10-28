@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9 64-bit) (preloaded format=pdflatex 2014.10.16)  27 OCT 2014 20:24
+This is pdfTeX, Version 3.1415926-2.5-1.40.14 (MiKTeX 2.9 64-bit) (preloaded format=pdflatex 2014.10.16)  27 OCT 2014 23:58
 entering extended mode
 **630-proj1_Report.tex
 (C:\Users\Puja\Desktop\630-proj1\Report\630-proj1_Report.tex
@@ -459,21 +459,22 @@ Package pdftex.def Info: ../Report/UnderstandingTheReq.png used on input line 2
 -proj1/Report/UnderstandingTheReq.png>] [2] (C:\Users\Puja\Desktop\630-proj1\Re
 port\630-proj1_Report.aux) ) 
 Here is how much of TeX's memory you used:
- 2720 strings out of 493921
- 34148 string characters out of 3147284
- 93975 words of memory out of 3000000
- 5987 multiletter control sequences out of 15000+200000
- 9804 words of font info for 37 fonts, out of 3000000 for 9000
+ 2723 strings out of 493921
+ 34178 string characters out of 3147284
+ 94978 words of memory out of 3000000
+ 5989 multiletter control sequences out of 15000+200000
+ 10150 words of font info for 38 fonts, out of 3000000 for 9000
  841 hyphenation exceptions out of 8191
  27i,6n,24p,421b,246s stack positions out of 5000i,500n,10000p,200000b,50000s
 <C:/Program Files/MiKTeX 2.9/fonts/type1/public/ams
 fonts/cm/cmbx10.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm
 /cmbx12.pfb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr10.p
 fb><C:/Program Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Pr
-ogram Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb>
-Output written on 630-proj1_Report.pdf (2 pages, 82507 bytes).
+ogram Files/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmr17.pfb><C:/Program Fil
+es/MiKTeX 2.9/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on 630-proj1_Report.pdf (2 pages, 95308 bytes).
 PDF statistics:
- 32 PDF objects out of 1000 (max. 8388607)
+ 36 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  6 words of extra memory for PDF output out of 10000 (max. 10000000)
 
