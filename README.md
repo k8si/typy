@@ -21,6 +21,7 @@ Authors: Puja Mishra, Kate Silverstein
 2. Compile everything:
 
 		npm install
+		make
     
 3. Open a browser window and the browser's developer tools
 4. Open `630-proj1/www/app.html` in your browser
