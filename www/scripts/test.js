@@ -63,11 +63,7 @@ require(['tests/test_suite'], function(test_suite) {
                     if (xmlHttpReq.readyState == 4 && xmlHttpReq.status == 200) {
                         reader.onloadend = function() {
                             if (reader.readyState == 2) {
-//                                console.log("got response.");
-//                                console.log(typeof reader.result);
                                 var data = reader.result;
-//                                console.log("data: " + data.toString());
-//                                console.log("data len: " + data.byteLength + " bytes");
                                 var result = tsuite.test(file, data);
                                 if (result != undefined) {
                                     if (result == 0) {
