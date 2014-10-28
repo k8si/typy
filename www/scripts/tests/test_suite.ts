@@ -38,6 +38,10 @@ export var TestDict = {
     "http://localhost:3000/data/test_fxn.pyc": function(data){
         var parser = new parse.Parser("test_fxn.pyc", 0);
         return parser.parse(data);
+    },
+    "http://localhost:3000/data/test_float.pyc": function(data){
+        var parser = new parse.Parser("test_float.pyc", 0);
+        return parser.parse(data);
     }
 };
 
@@ -46,8 +50,7 @@ export class TestSuite {
     public test(filename: string, data: any): number {
         console.log("testing on " + filename);
         if (filename in TestDict) return TestDict[filename](data);
+        else throw new Error("TestSuite: no test defined for " + filename);
         return 1; //"0 for success"
     }
 }
-
-var fxn = TestDict["http://localhost:3000/data/test_if.pyc"];

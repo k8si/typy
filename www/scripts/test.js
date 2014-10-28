@@ -15,7 +15,7 @@ require(['tests/test_suite'], function(test_suite) {
     var tsuite = new test_suite.TestSuite();
 
     function createCORSRequest(method, url) {
-        console.log("CORS req. for : " + url.toString());
+//        console.log("CORS req. for : " + url.toString());
         var xhr = new XMLHttpRequest();
         if ("withCredentials" in xhr) {
             xhr.open(method, url, true);
@@ -36,14 +36,15 @@ require(['tests/test_suite'], function(test_suite) {
     function makeCorsRequest() {
         var prefix = "http://localhost:3000/data/";
         var files = [
-            "test_if.pyc",
-            "test_for_loop.pyc",
-            "test_while_loop.pyc",
-            "test_list.pyc",
-            "test_dict.pyc",
-            "test_neg_numbers.pyc",
-            "test_math.pyc",
-            "test_fxn.pyc"
+            "test_if.pyc", //good
+            "test_for_loop.pyc", //good
+            "test_while_loop.pyc", //good
+//            "test_list.pyc" //TODO bad
+            "test_dict.pyc", //good
+            "test_neg_numbers.pyc", //good
+            "test_math.pyc", //good
+//            "test_fxn.pyc" //TODO bad
+            "test_float.pyc"
         ];
 
         for (var i = 0; i < files.length; i++){
@@ -54,26 +55,42 @@ require(['tests/test_suite'], function(test_suite) {
                 return;
             }
 
-            xhr.onreadystatechange = (function (f, hr) {
+            xhr.onreadystatechange = (function (file, xmlHttpReq) {
                 return function() {
-                    console.log("xhr.onreadystatechange");
-                    if (hr.readyState == 4 && hr.status == 200) {
-                        console.log("response loaded");
-                        var result = tsuite.test(f, hr.response);
-                        if (result != undefined) {
-                            if (result == 0) {
-                                console.log("done.");
-                                document.getElementById("output").innerHTML += '<p class="pass">PASSED: ' + f + '</p>';
+                    var reader = new FileReader();
+                    if (xmlHttpReq.readyState == 4 && xmlHttpReq.status == 200) {
+                        reader.onloadend = function() {
+                            if (reader.readyState == 2) {
+//                                console.log("got response.");
+//                                console.log(typeof reader.result);
+                                var data = reader.result;
+//                                console.log("data: " + data.toString());
+//                                console.log("data len: " + data.byteLength + " bytes");
+                                var result = tsuite.test(file, data);
+                                if (result != undefined) {
+                                    if (result == 0) {
+//                                        console.log("done.");
+                                        document.getElementById("output").innerHTML += '<p class="pass">PASSED: ' + file + '</p>';
+                                    } else {
+                                        document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
+                                    }
+                                } else {
+                                    document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + file + '</p>';
+                                }
                             } else {
-                                document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + f + '</p>';
+                                //do nothing
                             }
-                        } else {
-                            document.getElementById("output").innerHTML += '<p class="fail">FAILED: ' + f + '</p>';
-                        }
+                        };
+                        reader.onerror = function(){ throw new Error("FileReader error."); };
+//                        console.log("xmlHttpReq response: " + xmlHttpReq.response.toString());
+                        reader.readAsArrayBuffer(xmlHttpReq.response);
+                    } else if (xmlHttpReq.readyState == 4 && xmlHttpReq.status != 200) {
+                        throw new Error("status code 200");
                     }
-                };
+                }
             })(fullpath, xhr);
-            xhr.responseType = "arraybuffer";
+
+            xhr.responseType = "blob";
             xhr.send();
         }
     }

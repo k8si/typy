@@ -26,10 +26,12 @@ export var BINARY_OPS = {
     MULTIPLY: function(x,y){ return x * y; },
     DIVIDE: function(x,y){return x / y ;},
     SUBSCR: function(x, y){
-        console.log("BINARY_SUBSCR: x = " + x.toString() + ", y = " + y.toString()); //+ "; x[y] = " + x[y].toString());
-        return y.get(x.value); //TODO this only really works for utils.Dict, need to make it more general
+        console.log("\t" + x.toString() + " get " + y.toString());
+        var val = x.get(y);
+        if (val) { console.log("\t got " + val.toString()); return val; }
+        else throw new Error("BINARY_SUBSCR: key error");
     }
-    //...
+
 };
 
 /** status code for main loop (reason for stack unwind) **/
@@ -105,7 +107,7 @@ export class VirtualMachine {
         return this.frame.block_stack.pop();
     }
 
-    private make_frame(code:pyo.PyCodeObject, callargs=new utils.Dict<any>(), globals?:any, locals?:any): vmo.Frame {
+    private make_frame(code:pyo.PyCodeObject, callargs=new pyo.PyDict(), globals?:any, locals?:any): vmo.Frame {
         console.log("make frame: " + code.toString());
         var frame_globals, frame_locals;
         if (globals) {
@@ -113,9 +115,9 @@ export class VirtualMachine {
             if (!locals) frame_locals = globals;
         } else if (this.frame) { //TODO "if (this.frame)" instead of this.frames?? bug in byterun??
             frame_globals = this.frame.globals;
-            frame_locals = new utils.Dict<any>();
+            frame_locals = new pyo.PyDict();
         } else {
-            frame_globals = new utils.Dict<any>();
+            frame_globals = new pyo.PyDict();
             frame_globals.add("__builtins__", bi.builtins);
             frame_globals.add("__name__", new pyo.PyString(new Buffer("__main__")));
             frame_globals.add("__doc__", new pyo.PyNone());
@@ -212,17 +214,19 @@ export class VirtualMachine {
     private parse_byte_and_args(): any[] {
         var results = [];
         var f = this.frame;
-        var byteCode = f.frame_code_object.code.toBuffer();
+        var byteCodeBuff: Buffer = f.frame_code_object.code.value; //toBuffer();
         var op_offset = f.lasti;
-        var op_code = f.frame_code_object.code.toBuffer().readUInt8(op_offset);
+        var op_code: number = byteCodeBuff.readUInt8(op_offset);
         f.lasti++;
-        var op_name = opcodes.Opcode[op_code];
+        var op_name: string = opcodes.Opcode[op_code.toString()];
         results.push(op_name);
         results.push(op_code);
         results.push(op_offset);
         var arg;
         if (op_code >= opcodes.HAVE_ARGUMENT) {
-            var intArg = utils.read_short(byteCode, f.lasti);
+            var a1 = byteCodeBuff.readUInt8(f.lasti), a2 = byteCodeBuff.readUInt8(f.lasti+1);
+            var intArg = a1 + (a2 << 8);
+//            var intArg = utils.read_short(byteCodeBuff, f.lasti);
             f.lasti += 2;
             if (utils.contains(opcodes.hasArgInConsts, op_code)) {
                 if (f.frame_code_object.consts.type == "stopiter") arg = f.frame_code_object.consts;
@@ -300,17 +304,20 @@ export class VirtualMachine {
 
 
     private unaryOperator(op:string): void {
+        console.log("UNARY_"+op);
         var x = this.pop();
-        this.push(UNARY_OPS[op](x));
+        this.push(UNARY_OPS[op](x.value));
     }
 
     private binaryOperator(op:string): void {
-        var x = this.pop();
+        console.log("BINARY_"+op);
         var y = this.pop();
-        this.push(BINARY_OPS[op](x, y));
+        var x = this.pop();
+        this.push(BINARY_OPS[op](x.value, y.value));
     }
 
     private inplaceOperator(op:string): void {
+        console.log("BINARY_"+op);
         var x = this.pop();
         var y = this.pop();
         if (typeof x == "object") x = x.value;
@@ -331,6 +338,7 @@ export class VirtualMachine {
 
     //TODO verify this works
     private sliceOperator(op:string): void {
+        console.log("SLICE_"+op);
         var start = 0;
         var end;
         var op = op.slice(0, op.length-2);
@@ -378,6 +386,7 @@ export class VirtualMachine {
         var result;
         switch (opcode) {
             case opcodes.Opcode.LOAD_CONST: this.LOAD_CONST(arg); break;
+            case opcodes.Opcode.LOAD_ATTR: this.LOAD_ATTR(arg); break;
             case opcodes.Opcode.STORE_NAME: this.STORE_NAME(arg); break;
             case opcodes.Opcode.LOAD_NAME: this.LOAD_NAME(arg); break;
 
@@ -388,6 +397,7 @@ export class VirtualMachine {
             case opcodes.Opcode.STORE_SUBSCR: this.STORE_SUBSCR(); break;
 
             case opcodes.Opcode.MAKE_FUNCTION: this.MAKE_FUNCTION(arg); break;
+            case opcodes.Opcode.CALL_FUNCTION: this.CALL_FUNCTION(arg); break;
             case opcodes.Opcode.SETUP_LOOP: this.SETUP_LOOP(arg); break;
             case opcodes.Opcode.RETURN_VALUE: result = this.RETURN_VALUE(); break;
 
@@ -418,6 +428,17 @@ export class VirtualMachine {
             default: this.raise_error("getOp(): unknown opcode: " + opcode);
         }
         return result;
+    }
+
+    //TODO
+    private LOAD_ATTR(attr: any): void {
+        var obj = this.pop();
+        var aval = attr.value;
+        var val;
+        if (obj.contains(aval)) val = obj.get(attr.value);
+        else val = obj.getAttr(attr.value);
+        console.log("LOAD_ATTR: " + obj.toString() + " arg: " + attr.toString() + " attr="+val.toString());
+        this.push(val);
     }
 
     private LOAD_CONST(constant:any): void {
@@ -512,6 +533,51 @@ export class VirtualMachine {
         this.push(fn);
     }
 
+    //TODO
+    private CALL_FUNCTION(arg: any): void {
+        console.log("CALL_FUNCTION: arg = " + arg.toString());
+        var args = new pyo.PyList();
+        var kwargs = new pyo.PyDict();
+        this.call_function(arg, args, kwargs);
+//        //TODO args, kwargs
+//        var fxn = this.pop();
+//        console.log("\t"+fxn.toString());
+//        var result = fxn();
+//        console.log("\tresult: " + result.toString());
+
+    }
+
+    private divmod(a: number, b: number): number[] {
+        var res1 = Math.floor(a / b);
+        var res2 = a % b;
+        return [res1, res2];
+    }
+
+    private call_function(arg, args, kwargs): void {
+        var info = "\tcall_function: ";
+        var lens = this.divmod(arg, 256);
+        var lenKw = lens[0], lenPos = lens[1];
+        var namedArgs = new utils.Dict<any>();
+        for (var i = 0; i < lenKw; i++){
+            var key = this.pop();
+            var val = this.pop();
+            namedArgs.add(key, val);
+        }
+        namedArgs.update(kwargs);
+        var posArgs = [];
+        for (var i = 0; i < lenPos; i++){
+            posArgs[i] = this.pop();
+        }
+        posArgs.reverse();
+        for (var i = 0; i < args.length; i++) posArgs.push(args[i]);
+        var fxn = this.pop();
+        console.log(info + fxn.toString());
+        var result = fxn.call(posArgs, namedArgs);
+        info += "result: " + result.toString();
+        console.log(info);
+        this.push(result);
+    }
+
     private COMPARE_OP(arg:any): void {
         var y = this.pop();
         var x = this.pop();
@@ -575,7 +641,6 @@ export class VirtualMachine {
     }
 
     private BUILD_LIST(numItems:number): void {
-
         var items = [];
         for (var i = 0; i < numItems; i++) {
             items.push(this.pop());
@@ -588,7 +653,7 @@ export class VirtualMachine {
 
     private BUILD_MAP(numItems: number): void {
         console.log("BUILD_MAP: with " + numItems + " items.");
-        this.push(new utils.Dict<any>());
+        this.push(new pyo.PyDict());
     }
 
     private GET_ITER(): void {

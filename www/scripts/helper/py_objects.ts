@@ -27,13 +27,33 @@ import utils = require("./utils");
 import Long = require("long");
 
 
+//TODO should be T implements PyObject??
+export class PyFunction<T extends PyObject, R extends PyObject> {
+    public name: string;
+    public obj: T;
+    public ret: R;
+    public constructor(name: string, obj: T, ret?: R) {
+        this.name = name;
+        this.obj = obj;
+        if (ret) this.ret = ret;
+        else this.ret = null;
+    }
+    public call(args: any[], posArgs?: any[], kwargs?: utils.Dict<any>): R {
+        if (this.name in this.obj) {
+            if (!this.ret) return this.obj[this.name](args, posArgs, kwargs);
+            else return this.ret.createNew(this.obj[this.name](args, posArgs, kwargs));
+        } else throw new Error(this.obj.toString() + " doesnt have fxn " + this.name);
+    }
+    public toString(){ return "(PyFunction " + this.name + " on " + this.obj.toString(); }
+}
 
 //make sure that all of the wrapper objects have value and type fields
 export interface PyObject {
     value: any;
     type: string;
-//    eq<T>(other: T): boolean;
+//    attrs: utils.Dict<PyFunction>;
     toString(): string;
+    createNew(args: any): any;
 }
 
 //constants
@@ -43,37 +63,78 @@ export class PyNull implements PyObject {
     public value = null;
     public type = "null";
     public toString(): string { return "< PyNull >"; }
-//    public eq<T>(other: PyObject): boolean { return other.type == this.type; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 }
 
 export class PyNone implements PyObject {
     public value = undefined;
     public type = "none";
     public toString(): string { return "< PyNone >"; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 }
 
 export class PyStopIter implements PyObject {
     public value = "stopiter";
     public type = "stopiter";
     public toString(): string { return "< PyStopIter >"; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 }
 
 export class PyEllipsis implements PyObject {
     public value = "...";
     public type = "ellipsis";
     public toString(): string { return "< PyEllipsis >"; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 }
 
 export class PyTrue implements PyObject {
     public value: boolean = true;
     public type = "true";
     public toString(): string { return "< PyTrue >"; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 }
 
 export class PyFalse implements PyObject {
     public value:boolean = false;
     public type = "false";
     public toString(): string { return "< PyFalse >"; }
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs");
+//        else return this.attrs.get(attr);
+//    }
 }
 
 
@@ -81,19 +142,16 @@ export class PyInt implements PyObject {
     public value: number;
     public sign: number;
     public type = "int";
-//    private bits: number[];
-//    private TWO_PWR_32_DBL_ = (1 << 16) * (1 << 16);
-//    private IntCache = new utils.Map<number, PyInt>();
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs");
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: number){
         this.value = value;
     }
-//    private fromInt(value: number): number {
-//        if (-128 <= value && value < 128) {
-//            var cachedObj = this.IntCache.get(value);
-//            if (cachedObj) return cachedObj;
-//        }
-//        var obj = new PyInt
-//    }
     public toString(): string { return "(PyInt "+ this.value.toString() + ")"; }
 }
 
@@ -103,6 +161,14 @@ export class PyInt implements PyObject {
 export class PyInt64 implements PyObject {
     public value: dcodeIO.Long; //should be type Long?
     public type = "int64";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
+
     constructor(value: dcodeIO.Long) {
         this.value = value;
     }
@@ -118,15 +184,30 @@ export class PyInt64 implements PyObject {
 export class PyLong implements PyObject {
     public value: dcodeIO.Long;
     public type = "long";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: dcodeIO.Long){
         this.value=value;
     }
     public toString(): string { return "<PyLong "+ this.value.toString() + ">"; }
+
 }
 
 export class PyFloat implements PyObject {
     public value: number; //TODO should be Long too?
     public type = "float";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: number) {
         this.value = value;
     }
@@ -135,13 +216,21 @@ export class PyFloat implements PyObject {
 }
 
 export class PyString implements PyObject {
-    public value: string;
+//    public value: string;
+    public value: Buffer;
     public type = "string";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: Buffer){
-        this.value=value.toString();
+        this.value = value; //.toString();
     }
     //for reading bytecode byte by byte in PyCodeObject methods
-    public toBuffer(): Buffer { return new Buffer(this.value); }
+//    public toBuffer(): Buffer { return new Buffer(this.value); }
     public toString(): string { return "<PyString '" + this.value.toString() + "'>"}
 }
 
@@ -149,6 +238,13 @@ export class PyInterned implements PyObject {
 //    public value: Buffer;
     public value: string;
     public type = "interned-string";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: Buffer) {
         this.value = value.toString();
     }
@@ -160,6 +256,13 @@ export class PyStringRef implements PyObject {
 //    public value: Buffer;
     public value: string;
     public type = "string-ref";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: Buffer) {
         this.value = value.toString();
     }
@@ -169,15 +272,36 @@ export class PyStringRef implements PyObject {
 export class PyUnicode implements PyObject {
     public value: string;
     public type = "unicode";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value: string) {
         this.value = value;
     }
     public toString(): string { return "<PyUnicode '" + this.value + "'>"; }
 }
 
-export class PyTuple implements PyObject {
+
+export interface PyCollection {
+    get(key: any): any;
+    size(): number;
+}
+
+//make sure that all of the wrapper objects have value and type fields
+export class PyTuple implements PyObject, PyCollection {
     public value:any[];
     public type = "tuple";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
     constructor(value:any[]){
         this.value = value;
     }
@@ -192,7 +316,10 @@ export class PyTuple implements PyObject {
         }
         return " <PyTuple with "+this.value.length+" elements: ( " + info + " ) >"
     }
-    public length(): number { return this.value.length; }
+    public length(): number {
+        return this.value.length;
+    }
+    public size(): number { return this.length(); }
     public get(idx:number): any {
         if (idx >= 0 && idx < this.value.length) return this.value[idx];
         else return null;
@@ -203,14 +330,23 @@ export class PyTuple implements PyObject {
     }
 }
 
-export class PyList implements PyObject {
+export class PyList implements PyObject, PyCollection {
     public value:any[];
     public type = "list";
-    constructor(value:any[]){
-        this.value = value;
+    public createNew(args: any): PyList { return new PyList(args); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs");
+//        else return this.attrs.get(attr);
+//    }
+    constructor(value?:any[]){
+        if (value) this.value = value;
+        else this.value = [];
     }
 
     public length(): number { return this.value.length; }
+    public size(): number { return this.length(); }
 
     public get(idx:number): any {
         if (idx >= 0 && idx < this.value.length) return this.value[idx];
@@ -226,36 +362,57 @@ export class PyList implements PyObject {
     }
 }
 
-export class PyDict implements PyObject {
-    public value:any[];
+export class PyDict implements PyObject, PyCollection {
+    public value: utils.Dict<any>;
     public type = "dict";
-    constructor(value:any[]){
-        this.value = value;
+    public attrs = new utils.Dict<PyFunction<PyDict, any>>(["str"], [new PyFunction<PyDict, PyString>("str", this)]); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+    constructor(value?: utils.Dict<any>){
+        if (value) this.value = value;
+        else this.value = new utils.Dict<any>();
+        this.attrs.add("keys", new PyFunction<PyDict, PyList>("keys", this, new PyList()));
+
     }
 
-    public length(): number { return this.value.length; }
-    public toString(): string {
-        return "(PyDict)";
-//        var s = "(PyList [";
-//        for (var i = 0; i < this.value.length; i++) s += this.value[i].toString() + ", ";
-//        s += "] )";
-//        return s;
+    public getAttr(attr: string): any {
+        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs");
+        else return this.attrs.get(attr);
     }
+
+    public get(key: string): any {
+        return this.value.get(key);
+    }
+
+    public contains(key: string): boolean { return this.value.contains(key); }
+
+    public add(key: string, value: any){
+        this.value.add(key, value);
+    }
+
+    public update(dict: PyDict): void {
+        this.value.update(dict.value);
+    }
+
+    public length(): number { return this.value.size(); }
+    public size(): number { return this.length(); }
+    public keys(): string[] { return this.value.keys(); }
+    public values(): any[] { return this.value.values(); }
+
+    public toString(): string { return this.value.toString(); }
 }
-//
-//export class PyFrozenSet extends PyComplex {
-//    value:any;
-//    constructor(offset:number, value:any) {
-//        super(offset, "set");
-//        this.value = value;
-//    }
-//}
-
-
 
 export class PyCodeObject implements PyObject {
     public value = "code-object";
     public type = "code-object";
+    public createNew(args: any): any { throw new Error("not yet implemented"); }
+
+//    public attrs = new utils.Dict<PyFunction>("toString", this); //BuiltinFactory.make(["value", "type", "toString"], [this.value, this.type, this.toString]);
+//    public getAttr(attr: string): any {
+//        if (!this.attrs.contains(attr)) throw new Error("getAttr: key error - key " + attr + " not in this object's attrs")
+//        else return this.attrs.get(attr);
+//    }
 
     argcount:number;
     nlocals:number;
@@ -315,6 +472,8 @@ export class PyCodeObject implements PyObject {
         if (this.names) info += "names: " + this.names.toString() + " \n";
         if (this.consts) info += "consts: " + this.consts.toString() + " \n";
         if (this.varnames) info += "locals: " + this.varnames.toString() + " \n";
+        info += "filename: " + this.filename.value.toString() + "\n";
+
         return info;
     }
 
@@ -325,7 +484,7 @@ export class PyCodeObject implements PyObject {
      * @return results = [opcode name, opcode number, arg if there is one] **/
     public get_byteinfo_at(i:number, lasti:number): any[] {
         var results = [];
-        var byteCode = this.code.toBuffer();
+        var byteCode = this.code.value; //.toBuffer();
 //        console.log("get_byteinfo_at idx = " + i + " / " + byteCode.length);
 
         if (i >= byteCode.length) {
@@ -353,12 +512,12 @@ export class PyCodeObject implements PyObject {
             else throw new Error("PyCodeObject.get_byteinfo_at(): opcode " + op + " should have arg but we dont know how to get it");
             results.push(argVal);
         }
-//        console.log("done with get_byteinfo_at.");
+
         return results;
     }
 
     public print_co_code(): void {
-        console.log("--> CO_CODE <--");
+
         if (this.name) console.log("name: " + this.name.toString());
         if (this.filename) console.log("filename: " + this.filename.toString());
         if (this.firstlineno) console.log("firstlineno: " + this.firstlineno);
@@ -370,28 +529,41 @@ export class PyCodeObject implements PyObject {
         if (this.cellvars) console.log("cellvars: " + this.cellvars.toString());
         if (!this.code) throw new Error("this PyCodeObject doesnt have any code");
         if (!this.code.value) throw new Error("this PyCodeObjects code doesnt have a value");
-        var byteCode = this.code.toBuffer();
-        for (var i = 0; i < this.code.value.length; i += 3) {
-            var op = byteCode.readUInt8(i);
-            console.log("\topname: " + op + " " + opcodes.Opcode[op]);
+
+        console.log("");
+
+        var byteCode: Buffer = this.code.value; //toBuffer();
+
+        var info = "";
+        var idx = 0;
+        while (idx < byteCode.length) {
+            var op = byteCode.readUInt8(idx);
+            idx++;
+            var opName = opcodes.Opcode[op];
+            info += op + " " + opName + "\t";
+            if (!opName) throw new Error("PyCodeObject: invalid opcode " + op);
             if (op >= opcodes.HAVE_ARGUMENT) {
-                var nextBytes = byteCode.slice(i+1, i+2);
-                var idx = nextBytes.readUInt8(0) + (nextBytes.readUInt8(1) << 8);
+                var a1 = byteCode.readUInt8(idx);
+                var a2 = byteCode.readUInt8(idx+1);
+                idx += 2;
+                var intArg = a1 + (a2 << 8);
                 if (this.contains(opcodes.hasArgInNames, op)) {
-                    console.log("\t\targ: names @ " + idx + " : " + this.names.get(idx));
+                    info += "arg: names @ " + intArg + " : " + this.names.get(intArg);
                 } else if (this.contains(opcodes.hasArgInConsts, op)) {
-                    if (this.consts.type == "stopiter") console.log("\t\targ: consts @ " + idx + " : " + this.consts.toString());
-                    else console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
+                    if (this.consts.type == "stopiter") info += "arg: consts @ " + intArg + " : " + this.consts.toString(); //console.log("\t\targ: consts @ " + idx + " : " + this.consts.toString());
+                    else info += "arg: consts @ " + intArg + " : " + this.consts.get(intArg); //console.log("\t\targ: consts @ " + idx + " : " + this.consts.get(idx));
                 } else if (this.contains(opcodes.hasArgInLocals, op)) {
-                    console.log("\t\targ: varnames @ " + idx + " : " + this.varnames.get(idx));
+                    info += "arg: varnames @ " + intArg + " : " + this.varnames.get(intArg);
                 } else if (this.contains(opcodes.hasJrel, op)) {
-                    console.log("\t\targ: jrel arg = lasti + " + idx);
+                    info += "arg: jrel arg = lasti + " + intArg;
                 } else if (this.contains(opcodes.hasFree, op)) {
-                    console.log("\t\targ: hasFree --> NOT YET IMPLEMENTED"); //TODO
+                    throw new Error("PyCodeObject: hasFree arg not yet implemented");
                 } else {
-                    console.log("\t\targ: jabs or compare");
+                    info += "arg: jabs or compare";
                 }
             }
+            console.log(info);
+            info = "";
         }
     }
 }
