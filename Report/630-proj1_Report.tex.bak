@@ -6,10 +6,13 @@
 \usepackage{graphicx}
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 
+\title{TyPy: A Python Bytecode Interpreter for the Browser}
+\author{Puja Mishra, Kate Silverstein}
+\date{27 October 2014}
+
 \begin{document}
+\maketitle
 \section{Understanding the Requirements}
-
-
 
 The goal of this project is to implement a Python bytecode interpreter which is engine dependent and also can be hosted on a variety of browsers. So the high level picture of how we have implemented is shown below.
 
@@ -18,7 +21,58 @@ The goal of this project is to implement a Python bytecode interpreter which is 
 \includegraphics[scale=1]{../Report/UnderstandingTheReq.png} 
 
 \end{figure}
+
+\section{Design Approach}
+
+The input to the system is the python program written by the user and compiled using "compileall" module. This *.pyc file is uploaded when the user opens application, this file is passed to the parser where parser parses the bytecodes and generates a PyCodeObject to the the interpreter (which here is a stack based interpreter) , which interprets it and gives the result on the browser's console.
+
+
+
+\subsection{Parser}
+% general structure of parser taken from UnPyc
+
+\subsubsection{Structure of a Python Bytecode File}
+The bytecode is an attribute of the code object and is found in cocode attribute of the code object and contains instructions for the interpreter. Bytecode is nothing but a series of bytes.The interpreter will loop through each byte, look up what it should do for each one, and then do that thing. Using the dis module we can disassemble the bytecode.
+
+
+% \subsection{Character Encoding Considerations} (if there's time?)
+
+\subsection{Interpreter}
+The interpreter gets the python code object to interpret
+% general structure of interpreter taken from byterun 
+
+\subsubsection{Stack-Based Interpreters} 
+% talk about these vs. alternatives? (CPython is stack-based) (vs register-based? PyPy?)
+
+\subsection{Other Design Considerations}
+\subsubsection{Client-Side vs. Server-Side Javascript}
+% have to store files in browser local storage
+% have to use BrowserFS instead Node.js
+% have compile using AMD module instead of commonjs module (why did this matter? what are differences?)
+% have to use RequireJS to import
+
+\section{Results}
+\subsection{Supported Functionality}
+The interpreter here supports simple "if" statements, for and while loops, basic list creation and indexing, basic dictionary creation and queries, basic math operations and displays the output on the browser's console.
+% sample output from browser console
+
+% \subsection{Runtime and Efficiency} %(if there's time)
+% how long does it take to run e.g. sorting a list for a huge list?
+
+\section{Future Work}
+As an extension to our interpreter we can add more complex functions like nested if , for loops , etc. 
+
+\section{Conclusion}
+To conclude we would like to mention that though this is a simple interpreter 
+\section{References} % generate bibliography?
+% UnPyc
+% byterun
+% CPython
+% BrowserFS
+
+
+
+
 \end{document}
 
 
-\section{Parser}
