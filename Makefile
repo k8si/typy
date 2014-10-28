@@ -30,7 +30,8 @@ TESTS = $(TESTROOT)/test_if.py \
 		$(TESTROOT)/test_neg_numbers.py \
 		$(TESTROOT)/test_dict.py \
 		$(TESTROOT)/test_math.py \
-		$(TESTROOT)/test_fxn.py
+		$(TESTROOT)/test_fxn.py \
+		$(TESTROOT)/test_float.py
 
 default: classes
 
@@ -45,6 +46,8 @@ clean:
 	$(RM) $(TESTROOT)/*.pyc
 
 tests: $(TESTS:.py=.pyc)
+
+all: classes tests run
 
 
 

@@ -39,7 +39,7 @@ export class Parser {
         var rv: number[] = [];
         for (var i = 0; i < bstring.length; i++) {
             var char = bstring.charCodeAt(i);
-            rv.push(char & 0xffff);
+            rv.push(char & 0xff);
         }
         return rv;
     }
@@ -69,25 +69,30 @@ export class Parser {
         return rv;
     }
 
-    public parse(datastr: string): number {
+    public parse(datastr: ArrayBuffer): number {
         console.log("parsing...");
         this.pc = 0;
-        var buf = new Buffer(datastr);
-        while (this.pc + 1 < buf.length) {
-            var b = buf.readUInt8(this.pc);
-            if (b == this.type_map.CODE) break;
-            else this.pc++;
+        var byteView = new Uint8Array(datastr);
+        var nBytes = byteView.length;
+        var start;
+        var found;
+        var byte_array = [];
+        for (var i = 0; i < nBytes; i++){
+            var byte = byteView[i];
+            if (byte == 99) { if (!found) { start = i; found = true; } }
+            byte_array[i] = byte;
         }
-
+        var buf = this.bytearray_2_buffer(byte_array);
+        this.pc = start;
         var firstChar = buf.readUInt8(this.pc);
         if (firstChar != 99) throw new Error("error: first char is not 'c'");
+        console.log("starting parsing at offset " + this.pc);
         var obj = this.read_object(buf);
-
         if (obj) {
-            console.log("obj.co_code:");
-            obj.print_co_code();
-            console.log("\n\n");
-            console.log("done parsing. starting interpreter...");
+            console.log("done parsing. starting interpreter...\n");
+//            console.log("\ncode object bytecode:\n");
+//            obj.print_co_code();
+//            console.log("\nINTERPRETING...");
             var vm = new interp.VirtualMachine();
             var result = vm.run_code(obj);
             if (result) {console.log("done."); return 0;}
@@ -125,18 +130,14 @@ export class Parser {
 
             //TODO not sure if this is correct
             case tm.INT64: throw new Error("INT64 not yet implemented");
-//                console.log("found int64");
-//                var lo4 = this.read_unsigned_long(data);
-//                var hi4 = this.read_long(data);
-//                return new pyo.PyInt64(new Long(lo4, hi4));
 
             case tm.LONG: throw new Error("LONG not yet implemented"); //return new pyo.PyLong(this.read_type_long(data));
 
             case tm.FLOAT: throw new Error("FLOAT not yet implemented"); //return new pyo.PyFloat(this.read_float(data));
 
-            case tm.BINARY_FLOAT: throw new Error("BINARY_FLOAT not yet implemented");
-//                console.log("found binary_float");
-//                return new pyo.PyFloat(this.read_float(data));
+            case tm.BINARY_FLOAT:
+                return new pyo.PyFloat(this.read_float(data));
+                throw new Error("BINARY_FLOAT not yet implemented");
 
             case tm.COMPLEX: throw new Error("COMPLEX not yet implemented.");
 
@@ -149,7 +150,6 @@ export class Parser {
 
             case tm.STRING: return new pyo.PyString(this.read_string(data));
 
-
             case tm.STRINGREF:
                 var i = this.read_long(data); //new pyo.PyLong(offset, Parser.read_long(data));
                 var interned = this.internedStringList[i];
@@ -160,7 +160,6 @@ export class Parser {
             case tm.TUPLE: return new pyo.PyTuple(this.read_tuple(data));
 
             case tm.LIST: throw new Error("parse.ts: type LIST not yet implemented");
-//                return new pyo.PyList(offset, this.read_tuple(data)); //TODO
 
             case tm.DICT: throw new Error("parse.ts: type DICT not yet implemented");
 
@@ -192,6 +191,8 @@ export class Parser {
                 );
 
 //                console.log(obj.toString());
+
+//                obj.print_co_code();
 
                 return obj;
 
@@ -260,44 +261,29 @@ export class Parser {
         this.pc += coLength;
         return co_code;
     }
-//
+
     private read_tuple(data:Buffer): any[] {
         var n = this.read_long(data);
         console.assert(n >= 0, this.PARSE_ERR);
         var a = [];
         for (var i = 0; i < n; i++) {
-            var o = this.read_object(data);
-            a.push(o);
+            a.push(this.read_object(data));
         }
         return a;
     }
-//
-//    /*
-//     def r_dict(self):
-//     offset = self.p
-//     d = {}
-//     k = self.r_object()
-//     while k.__class__.__name__ != 'pyNull':
-//     d[k] = self.r_object()
-//     k = self.r_object()
-//     return pyDict(offset, d[k)
-//     */
-//    //TODO fix/make sure this works
-    private read_dict(data:Buffer): utils.Dict<any> {
-        console.log("read_dict...");
-        var d = new utils.Dict<any>();
-        var k = this.read_object(data);
-        while (k != undefined && k != null) {
-            var val = this.read_object(data);
-            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, this.read_object(data));
-            else break;
-            k = val;
-        }
-        return d;
-    }
 
-
-
+//    private read_dict(data:Buffer): utils.Dict<any> {
+//        console.log("read_dict...");
+//        var d = new utils.Dict<any>();
+//        var k = this.read_object(data);
+//        while (k != undefined && k != null) {
+//            var val = this.read_object(data);
+//            if (val != undefined && val != null && val.value != undefined && val.value != null) d.add(k, this.read_object(data));
+//            else break;
+//            k = val;
+//        }
+//        return d;
+//    }
 
 }
 

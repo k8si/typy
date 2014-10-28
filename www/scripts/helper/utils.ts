@@ -30,9 +30,15 @@ export class Dict<V> {
     _keys: Array<string>;
     _values: Array<V>;
 
-    constructor() {
+    constructor(initKeys?: Array<string>, initVals?: Array<V>) {
         this._keys = new Array<string>();
         this._values = new Array<V>();
+        if (initKeys){
+            if (!initVals || initKeys.length != initVals.length) throw new Error("Dict: initial keys and values must be same length");
+            for (var i = 0; i < initKeys.length; i++){
+                this.add(initKeys[i], initVals[i]);
+            }
+        }
     }
 
     // FIXME should throw exception if we try to add a key that's already in the dict
@@ -80,16 +86,16 @@ export class Dict<V> {
     }
 
     public toString(): string {
-        var s = "<Dict ";
+        var s = "(Dict ";
         var vals = this.values();
         var keys = this.keys();
         if (vals.length != keys.length) throw new Error("DICT ERROR, vals != keys");
         for (var i = 0; i < keys.length; i++) {
             s += " [ " + keys[i].toString() + " ] = "; //+ vals[i].toString() + "\n";
-            if (vals[i]) s += vals[i].toString() + "\n";
-            else s += "undefined" + "\n";
+            if (vals[i]) s += vals[i].toString() + " , ";
+            else s += "undefined" + " , ";
         }
-        s += ">";
+        s += ")";
         return s;
     }
 }

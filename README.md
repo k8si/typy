@@ -9,6 +9,7 @@ Authors: Puja Mishra, Kate Silverstein
 * Typescript
 * [npm](https://www.npmjs.org/)
 * Browser: tested on recent versions of Firefox and Chrome
+* Python 2.7 (needed by `make` to compile the test files)
 
 # Running the project
 
